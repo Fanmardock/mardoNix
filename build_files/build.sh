@@ -37,29 +37,45 @@ sudo curl --output-dir "/etc/yum.repos.d/" \
 dnf -y install quickshell dms greetd dms-greeter --allowerasing 
 #
 
+
+DMS_GREETER_BIN=$(which dms-greeter)
+
 # Install greetd login manager with dank configuration (still needs some work)
 mkdir -p /etc/greetd/
 cat > /etc/greetd/config.toml << EOF
 [terminal]
-vt = 1
+vt = "next"
+
 [default_session]
 user = "greeter"
-command = "/usr/local/bin/dms-greeter --command niri"
+command = "${DMS_GREETER_BIN} --command niri"
 EOF
 
 chmod 0755 /etc/greetd
 chown -R root:root /etc/greetd
 
+cat > /usr/lib/sysusers.d/greetd.conf << EOF
+u greeter - "Greetd Greeter" - /usr/sbin/nologin
+m greeter video
+EOF
+
+cat > /usr/lib/tmpfiles.d/dms-greeter.conf << EOF
+d /var/cache/dms-greeter 2770 greeter greeter - -
+Z /var/cache/dms-greeter 2770 greeter greeter - -
+EOF
+
 systemctl enable --force greetd.service
+
 
 mkdir -p /etc/skel/.config/systemd/user/graphical-session.target.wants
 ln -s /usr/lib/systemd/user/dms.service /etc/skel/.config/systemd/user/graphical-session.target.wants/
+
 mkdir -p /etc/skel/.config/niri/
 cp -rf /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/
 
 systemctl enable podman.socket
 
-sudo mv /etc/profile.d/origami-aliases.sh /etc/profile.d/origami-aliases.sh.bak
+mv /etc/profile.d/origami-aliases.sh /etc/profile.d/origami-aliases.sh.bak
 
 # Remove COSMIC shell and waybar
 dnf -y remove cosmic-comp cosmic-initial-setup cosmic-settings cosmic-settings-daemon cosmic-store  waybar
