@@ -9,7 +9,7 @@ sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 dnf -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 # User apps
-dnf -y install nautilus kitty mpv
+dnf -y install nautilus kitty mpv gnome-terminal gnome-system-monitor
 
 # OBS and fully-featured ffmpeg with nonfree components from rpm fusion
 dnf -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
@@ -21,6 +21,7 @@ curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
 dnf install -y nautilus-open-any-terminal
 glib-compile-schemas /usr/share/glib-2.0/schemas
 gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty
+
 
 # Install Niri 
 dnf -y install niri 
@@ -36,46 +37,36 @@ sudo curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-$(rpm -E %fedora)/avengemedia-dms-fedora-$(rpm -E %fedora).repo"
 dnf -y install quickshell dms greetd dms-greeter --allowerasing 
 #
-
-
-DMS_GREETER_BIN=$(which dms-greeter)
-
 # Install greetd login manager with dank configuration (still needs some work)
 mkdir -p /etc/greetd/
 cat > /etc/greetd/config.toml << EOF
 [terminal]
-vt = "next"
-
+vt = 1
 [default_session]
 user = "greeter"
-command = "${DMS_GREETER_BIN} --command niri"
+command = "dms-greeter --command niri"
 EOF
-
-chmod 0755 /etc/greetd
-chown -R root:root /etc/greetd
-
-cat > /usr/lib/sysusers.d/greetd.conf << EOF
-u greeter - "Greetd Greeter" - /usr/sbin/nologin
-m greeter video
-EOF
-
-cat > /usr/lib/tmpfiles.d/dms-greeter.conf << EOF
-d /var/cache/dms-greeter 2770 greeter greeter - -
-Z /var/cache/dms-greeter 2770 greeter greeter - -
-EOF
-
+rm -f /etc/systemd/system/display-manager.service
+ln -s /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 systemctl enable --force greetd.service
-
 
 mkdir -p /etc/skel/.config/systemd/user/graphical-session.target.wants
 ln -s /usr/lib/systemd/user/dms.service /etc/skel/.config/systemd/user/graphical-session.target.wants/
-
 mkdir -p /etc/skel/.config/niri/
 cp -rf /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/
 
+# DEV packages
+# cargo evtest git input-remapper libevdev-devel libinput-utils python3-devel
+
+# dnf -y install bitwarden-cli 
+
+#### Enable podman
+
 systemctl enable podman.socket
 
-mv /etc/profile.d/origami-aliases.sh /etc/profile.d/origami-aliases.sh.bak
+# Disable Origami tips
+
+sudo mv /etc/profile.d/origami-aliases.sh /etc/profile.d/origami-aliases.sh.bak
 
 # Remove COSMIC shell and waybar
 dnf -y remove cosmic-comp cosmic-initial-setup cosmic-settings cosmic-settings-daemon cosmic-store  waybar
