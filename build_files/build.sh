@@ -44,10 +44,12 @@ cat > /etc/greetd/config.toml << EOF
 vt = 1
 [default_session]
 user = "greeter"
-command = "dms-greeter --command niri"
+command = "/usr/local/bin/dms-greeter --command niri"
 EOF
-rm -f /etc/systemd/system/display-manager.service
-ln -s /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
+
+chmod 0755 /etc/greetd
+chown -R root:root /etc/greetd
+
 systemctl enable --force greetd.service
 
 mkdir -p /etc/skel/.config/systemd/user/graphical-session.target.wants
