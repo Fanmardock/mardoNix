@@ -9,11 +9,7 @@ sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 dnf -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 # User apps
-dnf -y install nautilus kitty mpv gnome-terminal gnome-system-monitor
-
-# OBS and fully-featured ffmpeg with nonfree components from rpm fusion
-dnf -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-dnf -y install ffmpeg x264-libs obs-studio obs-studio-plugin-x264 --allowerasing
+dnf -y install nautilus kitty mpv 
 
 # Nautilus open any terminal extension
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
