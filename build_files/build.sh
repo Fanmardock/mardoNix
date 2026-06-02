@@ -1,30 +1,46 @@
 #!/bin/bash
 set -ouex pipefail
 
+# Variabili d'ambiente per istruire RakuOS/DNF a non usare overlay e plugin custom
+# che falliscono a causa delle limitazioni del file system dei runner di GitHub
+export RAKUOS_NO_OVERLAY=1
+export CONTAINER_BUILD=1
+
 ## DNF5 Speedup
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
 ## System apps
-dnf -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
+/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ \
+    libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 ## User apps
-dnf -y install nautilus kitty mpv
+/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ \
+    nautilus kitty mpv
 
-## Nautilus open any terminal extension
+## Nautilus open any terminal extension (Bypass RakuOS overlay)
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
   https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-$(rpm -E %fedora)/monkeygold-nautilus-open-any-terminal-fedora-$(rpm -E %fedora).repo
-dnf install -y nautilus-open-any-terminal
+
+# Installazione forzata ignorando i wrapper di RakuOS
+/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ nautilus-open-any-terminal
+
+## Gsettings Override (Fix per ambiente OCI senza D-Bus)
+mkdir -p /usr/share/glib-2.0/schemas/
+cat > /usr/share/glib-2.0/schemas/99_nautilus-open-any-terminal.gschema.override << EOF
+[com.github.stunkymonkey.nautilus-open-any-terminal]
+terminal='kitty'
+EOF
 glib-compile-schemas /usr/share/glib-2.0/schemas
-gsettings set com.github.stunkymonkey.nautilus-open-any-terminal terminal kitty
 
 ## Install Niri
-dnf -y install niri
+/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ niri
 
 ## Install Dank Linux shell (DMS)
 curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-$(rpm -E %fedora)/avengemedia-dms-fedora-$(rpm -E %fedora).repo"
-dnf -y install quickshell dms greetd dms-greeter --allowerasing
+
+/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ quickshell dms greetd dms-greeter --allowerasing
 
 ## Verifica path reale dms-greeter
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
@@ -57,8 +73,10 @@ d /var/cache/dms-greeter 2770 greeter greeter - -
 Z /var/cache/dms-greeter 2770 greeter greeter - -
 EOF
 
-## Abilita greetd come display manager
-systemctl enable --force greetd.service
+## Abilita greetd come display manager principale (Compatibile con ostree/bootc)
+systemctl enable greetd.service
+mkdir -p /etc/systemd/system/display-manager.service.wants
+ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 
 ## -------------------------------------------------------
 ## SKEL: configurazione default per nuovi utenti
@@ -69,17 +87,17 @@ mkdir -p /etc/skel/.config/systemd/user/graphical-session.target.wants
 ln -sf /usr/lib/systemd/user/dms.service \
   /etc/skel/.config/systemd/user/graphical-session.target.wants/dms.service
 
-## Config niri — copiata da build_files/dot_config/Niri/config.kdl
-## Debug: mostra cosa è disponibile nel contesto di build
-echo "=== Contenuto /ctx ==="
-find /ctx -type f | sort
-
+## Config niri
 mkdir -p /etc/skel/.config/niri/
-cp -f /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/config.kdl
+if [ -f /ctx/dot_config/niri/config.kdl ]; then
+    cp -f /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/config.kdl
+else
+    echo "WARNING: /ctx/dot_config/niri/config.kdl non trovato!"
+fi
 
 ## -------------------------------------------------------
 ## SERVIZIO FIRSTBOOT: sincronizza skel sugli utenti esistenti
-## Necessario perché bootc switch non ricrea le home esistenti
+## Rimossi i comandi 'systemctl --user' che fallivano a vuoto
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
@@ -99,8 +117,6 @@ ExecStart=/usr/bin/bash -c '\
     echo "Syncing skel to $home"; \
     cp -rn /etc/skel/. "$home"; \
     chown -R "$user":"$user" "$home"; \
-    su - "$user" -c "systemctl --user daemon-reload" || true; \
-    su - "$user" -c "systemctl --user enable dms.service" || true; \
   done; \
   touch /var/lib/skel-sync.done'
 
@@ -118,9 +134,9 @@ mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
 ## Remove COSMIC shell e waybar
-dnf -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
+/usr/bin/dnf5 -y --disableplugin=* --installroot=/ remove cosmic-comp cosmic-initial-setup cosmic-settings \
               cosmic-settings-daemon cosmic-store waybar || true
 
-## CLEAN UP
-dnf5 -y clean all
-rm -rf /run/dnf /run/selinux-policy /var/lib/dnf
+## CLEAN UP (Utilizzo omogeneo di dnf5 pulito)
+/usr/bin/dnf5 clean all --installroot=/
+rm -rf /run/dnf /run/selinux-policy /var/cache/dnf /var/cache/yum /tmp/*
