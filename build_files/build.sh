@@ -68,7 +68,7 @@ Z /var/cache/dms-greeter 2770 greeter greeter - -
 EOF
 
 ## Abilita greetd come display manager principale
-systemctl enable greetd.service
+systemctl enable --force greetd.service
 mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 
