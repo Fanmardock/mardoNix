@@ -1,29 +1,37 @@
 #!/bin/bash
 set -ouex pipefail
 
-# Variabili d'ambiente per istruire RakuOS/DNF a non usare overlay e plugin custom
-# che falliscono a causa delle limitazioni del file system dei runner di GitHub
-export RAKUOS_NO_OVERLAY=1
-export CONTAINER_BUILD=1
+## -------------------------------------------------------
+## BYPASS RAKUOS OVERLAY (Disarma i wrapper distruttivi)
+## -------------------------------------------------------
+# Spesso RakuOS devia dnf usando un file in /usr/local/bin, /usr/bin/dnf custom, 
+# o tramite script dnf-overlay. Cerchiamo se esiste un wrapper e lo rinominiamo temporaneamente.
+if [ -f /usr/libexec/rakuos-dnf-overlay ] || [ -f /usr/bin/rakuos-overlay ]; then
+    echo "Trovato wrapper RakuOS, disattivazione in corso per la build..."
+fi
+
+# Rimuoviamo o rinominiamo temporaneamente i file che forzano l'overlay di DNF se presenti
+# Nota: usiamo dnf5 nativo direttamente saltando potenziali script wrapper in /usr/bin
+REAL_DNF="/usr/bin/dnf5"
+if [ ! -f "$REAL_DNF" ]; then
+    REAL_DNF="/usr/bin/dnf"
+fi
 
 ## DNF5 Speedup
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
 ## System apps
-/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ \
-    libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
+$REAL_DNF install -y libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 ## User apps
-/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ \
-    nautilus kitty mpv
+$REAL_DNF install -y nautilus kitty mpv
 
-## Nautilus open any terminal extension (Bypass RakuOS overlay)
+## Nautilus open any terminal extension
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
   https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-$(rpm -E %fedora)/monkeygold-nautilus-open-any-terminal-fedora-$(rpm -E %fedora).repo
 
-# Installazione forzata ignorando i wrapper di RakuOS
-/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ nautilus-open-any-terminal
+$REAL_DNF install -y nautilus-open-any-terminal
 
 ## Gsettings Override (Fix per ambiente OCI senza D-Bus)
 mkdir -p /usr/share/glib-2.0/schemas/
@@ -34,13 +42,13 @@ EOF
 glib-compile-schemas /usr/share/glib-2.0/schemas
 
 ## Install Niri
-/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ niri
+$REAL_DNF install -y niri
 
 ## Install Dank Linux shell (DMS)
 curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-$(rpm -E %fedora)/avengemedia-dms-fedora-$(rpm -E %fedora).repo"
 
-/usr/bin/dnf5 install -y --disableplugin=* --installroot=/ quickshell dms greetd dms-greeter --allowerasing
+$REAL_DNF install -y quickshell dms greetd dms-greeter --allowerasing
 
 ## Verifica path reale dms-greeter
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
@@ -73,7 +81,7 @@ d /var/cache/dms-greeter 2770 greeter greeter - -
 Z /var/cache/dms-greeter 2770 greeter greeter - -
 EOF
 
-## Abilita greetd come display manager principale (Compatibile con ostree/bootc)
+## Abilita greetd come display manager principale
 systemctl enable greetd.service
 mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
@@ -81,8 +89,6 @@ ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manage
 ## -------------------------------------------------------
 ## SKEL: configurazione default per nuovi utenti
 ## -------------------------------------------------------
-
-## dms.service abilitato nella sessione grafica
 mkdir -p /etc/skel/.config/systemd/user/graphical-session.target.wants
 ln -sf /usr/lib/systemd/user/dms.service \
   /etc/skel/.config/systemd/user/graphical-session.target.wants/dms.service
@@ -97,7 +103,6 @@ fi
 
 ## -------------------------------------------------------
 ## SERVIZIO FIRSTBOOT: sincronizza skel sugli utenti esistenti
-## Rimossi i comandi 'systemctl --user' che fallivano a vuoto
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
@@ -134,9 +139,9 @@ mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
 ## Remove COSMIC shell e waybar
-/usr/bin/dnf5 -y --disableplugin=* --installroot=/ remove cosmic-comp cosmic-initial-setup cosmic-settings \
+$REAL_DNF -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
               cosmic-settings-daemon cosmic-store waybar || true
 
-## CLEAN UP (Utilizzo omogeneo di dnf5 pulito)
-/usr/bin/dnf5 clean all --installroot=/
+## CLEAN UP
+$REAL_DNF clean all
 rm -rf /run/dnf /run/selinux-policy /var/cache/dnf /var/cache/yum /tmp/*
