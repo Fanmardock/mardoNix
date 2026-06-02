@@ -1,42 +1,23 @@
 #!/bin/bash
 set -ouex pipefail
 
-## -------------------------------------------------------
-## DISATTIVAZIONE FORZATA PLUGIN OVERLAY RAKUOS
-## -------------------------------------------------------
-echo "=== Disattivazione plugin DNF di RakuOS ==="
+FEDORA_VERSION=$(rpm -E %fedora)
 
-# 1. Rinominiamo i plugin di DNF5 (Fedora moderna) se presenti
-mkdir -p /tmp/disabled_plugins
-if [ -d /usr/lib64/dnf5/plugins ]; then
-    find /usr/lib64/dnf5/plugins -type f -name "*rakuos*" -exec mv {} /tmp/disabled_plugins/ \; || true
-fi
-
-# 2. Rinominiamo i plugin di DNF4 (vecchio DNF/Python) se presenti
-if [ -d /usr/lib/python3.*/site-packages/dnf-plugins ]; then
-    find /usr/lib/python3.*/site-packages/dnf-plugins -type f -name "*rakuos*" -exec mv {} /tmp/disabled_plugins/ \; || true
-fi
-
-# 3. Controlliamo se c'è un file di configurazione dnf.conf custom o drop-in di RakuOS
-if [ -d /etc/dnf/dnf.conf.d ]; then
-    find /etc/dnf/dnf.conf.d -type f -name "*rakuos*" -exec mv {} /tmp/disabled_plugins/ \; || true
-fi
-
-## DNF5 Speedup
+## DNF5 Speedup (Applicato al config reale)
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
-## System apps
-dnf -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
+## System apps (Usando dnf5.real per bypassare l'overlay)
+dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 ## User apps
-dnf -y install nautilus kitty mpv
+dnf5.real -y install nautilus kitty mpv
 
 ## Nautilus open any terminal extension
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
-  https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-$(rpm -E %fedora)/monkeygold-nautilus-open-any-terminal-fedora-$(rpm -E %fedora).repo
+  https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
 
-dnf install -y nautilus-open-any-terminal
+dnf5.real -y install nautilus-open-any-terminal
 
 ## Gsettings Override (Fix per ambiente OCI senza D-Bus)
 mkdir -p /usr/share/glib-2.0/schemas/
@@ -47,13 +28,13 @@ EOF
 glib-compile-schemas /usr/share/glib-2.0/schemas
 
 ## Install Niri
-dnf -y install niri
+dnf5.real -y install niri
 
 ## Install Dank Linux shell (DMS)
 curl --output-dir "/etc/yum.repos.d/" \
-  --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-$(rpm -E %fedora)/avengemedia-dms-fedora-$(rpm -E %fedora).repo"
+  --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-${FEDORA_VERSION}/avengemedia-dms-fedora-${FEDORA_VERSION}.repo"
 
-dnf -y install quickshell dms greetd dms-greeter --allowerasing
+dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## Verifica path reale dms-greeter
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
@@ -144,30 +125,9 @@ mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
 ## Remove COSMIC shell e waybar
-dnf -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
-              cosmic-settings-daemon cosmic-store waybar || true
+dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
+                    cosmic-settings-daemon cosmic-store waybar || true
 
 ## CLEAN UP
-dnf clean all
+dnf5.real -y clean all
 rm -rf /run/dnf /run/selinux-policy /var/cache/dnf /var/cache/yum /tmp/*
-
-## -------------------------------------------------------
-## RIPRISTINO PLUGIN RAKUOS (Importante per il runtime del sistema)
-## -------------------------------------------------------
-echo "=== Ripristino plugin DNF di RakuOS ==="
-if [ -d /tmp/disabled_plugins ] && [ "$(ls -A /tmp/disabled_plugins)" ]; then
-    # Se i plugin erano in dnf5, li rimettiamo al loro posto
-    if [ -d /usr/lib64/dnf5/plugins ]; then
-        find /tmp/disabled_plugins -type f -name "*dnf5*" -exec cp {} /usr/lib64/dnf5/plugins/ \; || true
-    fi
-    # Se erano in Python (dnf4), li rimettiamo al loro posto
-    PY_DIR=$(ls -d /usr/lib/python3.*/site-packages/dnf-plugins 2>/dev/null | head -n 1)
-    if [ -n "$PY_DIR" ]; then
-        find /tmp/disabled_plugins -type f -name "*py*" -exec cp {} "$PY_DIR/" \; || true
-    fi
-    # Ripristino drop-in config
-    if [ -d /etc/dnf/dnf.conf.d ]; then
-        find /tmp/disabled_plugins -type f -not -name "*.py" -not -name "*.so" -exec cp {} /etc/dnf/dnf.conf.d/ \; || true
-    fi
-fi
-rm -rf /tmp/disabled_plugins
