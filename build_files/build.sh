@@ -145,11 +145,11 @@ ExecStart=/usr/bin/bash -c '\
   echo "Aggiunta repository Flathub..."; \
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; \
   echo "Installazione BambuStudio..."; \
-  flatpak install --noninteractive flathub com.bambulab.BambuStudio || true; \
+  flatpak install --noninteractive --or-update flathub com.bambulab.BambuStudio || true; \
   echo "Installazione Komikku..."; \
-  flatpak install --noninteractive flathub info.febvre.Komikku || true; \
+  flatpak install --noninteractive --or-update flathub info.febvre.Komikku || true; \
   echo "Installazione Google Chrome..."; \
-  flatpak install --noninteractive flathub com.google.Chrome || true; \
+  flatpak install --noninteractive --or-update flathub com.google.Chrome || true; \
   touch /var/lib/flatpak-provisioning.done'
 
 [Install]
