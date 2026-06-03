@@ -128,6 +128,36 @@ mv /etc/profile.d/origami-aliases.sh \
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
                     cosmic-settings-daemon cosmic-store waybar || true
 
+## -------------------------------------------------------
+## SERVIZIO FLATPAK: Installazione automatica al primo boot
+## -------------------------------------------------------
+cat > /usr/lib/systemd/system/flatpak-provisioning.service << 'UNIT'
+[Unit]
+Description=Install system Flatpaks on first boot
+After=network-online.target skel-sync.service
+Wants=network-online.target
+ConditionPathExists=!/var/lib/flatpak-provisioning.done
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/bash -c '\
+  echo "Aggiunta repository Flathub..."; \
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; \
+  echo "Installazione BambuStudio..."; \
+  flatpak install --noninteractive flathub com.bambulab.BambuStudio || true; \
+  echo "Installazione Komikku..."; \
+  flatpak install --noninteractive flathub info.febvre.Komikku || true; \
+  echo "Installazione Google Chrome..."; \
+  flatpak install --noninteractive flathub com.google.Chrome || true; \
+  touch /var/lib/flatpak-provisioning.done'
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl enable flatpak-provisioning.service
+
 ## CLEAN UP
 dnf5.real -y clean all
 rm -rf /run/dnf /run/selinux-policy /var/cache/dnf /var/cache/yum /tmp/*
