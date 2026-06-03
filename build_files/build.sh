@@ -75,6 +75,11 @@ ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manage
 ## -------------------------------------------------------
 ## SKEL: configurazione default per nuovi utenti
 ## -------------------------------------------------------
+# Fix Bubblewrap/Chrome: Generiamo preventivamente i percorsi XDG nello skel
+mkdir -p /etc/skel/.local/share/applications
+mkdir -p /etc/skel/.config
+mkdir -p /etc/skel/.var/app
+
 mkdir -p /etc/skel/.config/systemd/user/graphical-session.target.wants
 ln -sf /usr/lib/systemd/user/dms.service \
   /etc/skel/.config/systemd/user/graphical-session.target.wants/dms.service
@@ -88,7 +93,7 @@ else
 fi
 
 ## -------------------------------------------------------
-## SERVIZIO FIRSTBOOT: sincronizza skel sugli utenti esistenti
+## SERVIZIO FIRSTBOOT: sincronizza skel e sana i permessi di Chrome
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
@@ -106,8 +111,16 @@ ExecStart=/usr/bin/bash -c '\
     uid=$(id -u "$user" 2>/dev/null) || continue; \
     [ "$uid" -ge 1000 ] || continue; \
     echo "Syncing skel to $home"; \
+    # Forza la creazione locale delle cartelle critiche per evitare bug di bwrap
+    mkdir -p "$home"/.local/share/applications; \
+    mkdir -p "$home"/.config; \
+    # Rimuove eventuali vecchie sandbox corrotte di Chrome create da root
+    rm -rf "$home"/.var/app/com.google.Chrome; \
+    # Copia i file mancanti dallo skel
     cp -rn /etc/skel/. "$home"; \
+    # Sanatoria totale dei permessi: lito ogni cartella a root
     chown -R "$user":"$user" "$home"; \
+    chmod -R u+rwX "$home"/.local "$home"/.config 2>/dev/null || true; \
   done; \
   touch /var/lib/skel-sync.done'
 
@@ -116,17 +129,6 @@ WantedBy=multi-user.target
 UNIT
 
 systemctl enable skel-sync.service
-
-## Enable podman socket
-systemctl enable podman.socket
-
-## Disable Origami tips
-mv /etc/profile.d/origami-aliases.sh \
-   /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
-
-## Remove COSMIC shell e waybar
-dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
-                    cosmic-settings-daemon cosmic-store waybar || true
 
 ## -------------------------------------------------------
 ## SERVIZIO FLATPAK: Installazione automatica al primo boot
@@ -144,11 +146,11 @@ RemainAfterExit=yes
 ExecStart=/usr/bin/bash -c '\
   echo "Aggiunta repository Flathub..."; \
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; \
-  echo "Installazione BambuStudio..."; \
+  echo "Installazione/Aggiornamento BambuStudio..."; \
   flatpak install --noninteractive --or-update flathub com.bambulab.BambuStudio || true; \
-  echo "Installazione Komikku..."; \
+  echo "Installazione/Aggiornamento Komikku..."; \
   flatpak install --noninteractive --or-update flathub info.febvre.Komikku || true; \
-  echo "Installazione Google Chrome..."; \
+  echo "Installazione/Aggiornamento Google Chrome..."; \
   flatpak install --noninteractive --or-update flathub com.google.Chrome || true; \
   touch /var/lib/flatpak-provisioning.done'
 
@@ -157,6 +159,17 @@ WantedBy=multi-user.target
 UNIT
 
 systemctl enable flatpak-provisioning.service
+
+## Enable podman socket
+systemctl enable podman.socket
+
+## Disable Origami tips
+mv /etc/profile.d/origami-aliases.sh \
+   /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
+
+## Remove COSMIC shell e waybar
+dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
+                    cosmic-settings-daemon cosmic-store waybar || true
 
 ## CLEAN UP
 dnf5.real -y clean all
