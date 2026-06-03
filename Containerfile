@@ -3,7 +3,7 @@ FROM scratch AS ctx
 COPY build_files /
 
 # Base Image
-FROM registry.gitlab.com/rakuos/images/rakuos-cosmic:latest
+FROM registry.gitlab.com/rakuos/images/rakuos-cosmic:-latest
 RUN sed -i 's/^ID=.*/ID=fedora/' /etc/os-release
 
 ## Other possible base images include:
