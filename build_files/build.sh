@@ -11,7 +11,7 @@ dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 ## User apps
-dnf5.real -y install nautilus kitty mpv
+dnf5.real -y install nautilus kitty mpv gnome-software gnome-system-monitor
 
 ## Nautilus open any terminal extension
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
