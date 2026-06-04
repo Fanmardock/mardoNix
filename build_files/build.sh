@@ -159,8 +159,6 @@ WantedBy=multi-user.target
 UNIT
 
 systemctl enable flatpak-provisioning.service
-## Disable Bluetooth on startup
-systemctl disable bluetooth.service
 
 ## Enable podman socket
 systemctl enable podman.socket
