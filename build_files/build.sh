@@ -20,28 +20,31 @@ dnf5.real -y install gvfs blueman
 ## COMPILAZIONE MANUALE DI RAKUOS-SOFTWARE
 ## ==========================================
 
-# 1. Installiamo gli strumenti di compilazione e le dipendenze Qt6 (verranno rimosse dopo)
-dnf5.real -y install git cmake gcc-c++ \
-    qt6-qtbase-devel qt6-qtdeclarative-devel \
+## ==========================================
+## COMPILAZIONE MANUALE DI RAKUOS-SOFTWARE (RUST/Qt6)
+## ==========================================
+
+# 1. Installiamo il compilatore Rust (cargo), git e i file di sviluppo di Qt6
+dnf5.real -y install git cargo qt6-qtbase-devel qt6-qtdeclarative-devel \
     qt6-qtsvg-devel qt6-qttools-devel
 
-# 2. Cloniamo il codice sorgente ufficiale dal GitLab di RakuOS
+# 2. Cloniamo il codice sorgente
 cd /tmp
 git clone https://gitlab.com/rakuos/apps/rakuos-software.git
 cd rakuos-software
 
-# 3. Creiamo la cartella di build e compiliamo
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr
-make -j$(nproc)
+# 3. Compiliamo in modalità Release (ottimizzata e veloce) usando Cargo
+cargo build --release
 
-# 4. Installiamo il binario fresco e aggiornato nel sistema
-make install
+# 4. Copiamo il binario appena generato nella cartella corretta di sistema
+# (Dall'errore iniziale sappiamo che il sistema cerca il binario QT proprio in quel percorso)
+mkdir -p /usr/libexec/rakuos/software/
+cp target/release/rakuos-software-qt /usr/libexec/rakuos/software/rakuos-software-qt
 
-# 5. Pulizia profonda: rimuoviamo gli strumenti di sviluppo per lasciare il sistema pulito
+# 5. Pulizia profonda: eliminiamo cargo e le dipendenze per non appesantire l'immagine
 cd /
 rm -rf /tmp/rakuos-software
-dnf5.real -y remove qt6-qtbase-devel qt6-qtdeclarative-devel \
+dnf5.real -y remove cargo qt6-qtbase-devel qt6-qtdeclarative-devel \
     qt6-qtsvg-devel qt6-qttools-devel || true
     
 ## Nautilus open any terminal extension
