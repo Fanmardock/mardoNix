@@ -16,23 +16,35 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor
 ## Supporto Bluetooth per Nautilus e Dankshell
 dnf5.real -y install gvfs blueman
 
-## ==========================================
-## SCARICAMENTO BINARIO RAKUOS-SOFTWARE
-## ==========================================
+# 1. Installiamo tutto ciò che serve per compilare
+dnf5.real -y install git cargo \
+    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
+    glib2-devel openssl-devel flatpak-devel gdk-pixbuf2-devel
 
-# 1. Definiamo dove si trova l'ultimo rilascio (usiamo il ramo main)
-# Nota: verifica l'URL se il progetto ha un endpoint API per gli artefatti
-URL_BINARIO="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/artifacts/main/raw/rakuos-software-qt?job=build"
+# 2. Prepariamo lo spazio
+mkdir -p /tmp/rakuos-build
+cd /tmp/rakuos-build
 
-# 2. Installiamo solo lo stretto necessario per scaricare (curl)
-dnf5.real -y install curl
+# 3. Cloniamo
+git clone https://gitlab.com/rakuos/apps/rakuos-software.git
+cd rakuos-software
 
-# 3. Scarichiamo il binario direttamente nella cartella di sistema
+# 4. Compilazione
+# Usiamo una cartella locale per la cache di cargo per evitare conflitti
+export CARGO_HOME=/tmp/rakuos-build/.cargo
+cargo build --release
+
+# 5. Installazione
 mkdir -p /usr/libexec/rakuos/software/
-curl -L $URL_BINARIO -o /usr/libexec/rakuos/software/rakuos-software-qt
+cp target/release/rakuos-software-qt /usr/libexec/rakuos/software/rakuos-software-qt
 
-# 4. Rendiamolo eseguibile
-chmod +x /usr/libexec/rakuos/software/rakuos-software-qt
+# 6. Pulizia profonda (importante per mantenere l'immagine leggera)
+cd /
+rm -rf /tmp/rakuos-build
+dnf5.real -y remove cargo \
+    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
+    glib2-devel openssl-devel flatpak-devel gdk-pixbuf2-devel
+
     
 ## Nautilus open any terminal extension
 curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
