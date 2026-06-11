@@ -13,7 +13,9 @@ dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
 ## User apps (Aggiunto cosmic-store, icone e le librerie Qt6 per Wayland)
 dnf5.real -y install nautilus kitty mpv gnome-software gnome-system-monitor \
     cosmic-store
-dnf5.real -y install gvfs-obex gvfs-backends bluez-cups
+    
+## Supporto Bluetooth per Nautilus e Dankshell
+dnf5.real -y install gvfs blueman
 
 ## Nautilus open any terminal extension
 curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
