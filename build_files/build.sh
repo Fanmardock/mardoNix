@@ -42,8 +42,13 @@ dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## Gestione Bluetooth: Spento di default all'avvio, ma sbloccabile "on the fly"
 # Questa regola udev spegne l'antenna all'avvio senza killare il servizio systemd.
-mkdir -p /usr/lib/udev/rules.d/
-echo 'SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", ATTR{state}="0"' > /usr/lib/udev/rules.d/80-bluetooth-default-off.rules
+## Configura il Bluetooth per non connettersi automaticamente all'avvio
+mkdir -p /etc/bluetooth/
+cat > /etc/bluetooth/main.conf << EOF
+[General]
+# Impedisce al Bluetooth di accendere le antenne e cercare dispositivi al boot
+AutoEnable=false
+EOF
 
 ## Verifica path reale dms-greeter
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
