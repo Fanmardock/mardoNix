@@ -17,19 +17,21 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor
 dnf5.real -y install gvfs blueman
 
 ## ==========================================
-## COMPILAZIONE MANUALE DI RAKUOS-SOFTWARE (Fix Cache)
+## COMPILAZIONE MANUALE DI RAKUOS-SOFTWARE (Fix GLib)
 ## ==========================================
 
-# 1. Installiamo il compilatore Rust (cargo), git e i file di sviluppo di Qt6
-dnf5.real -y install git cargo qt6-qtbase-devel qt6-qtdeclarative-devel \
-    qt6-qtsvg-devel qt6-qttools-devel
+# 1. Installiamo cargo, i file di sviluppo di Qt6 e le librerie di sistema necessarie (glib, openssl, flatpak)
+dnf5.real -y install git cargo pkgconf-pkg-config \
+    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
+    glib2-devel openssl-devel flatpak-devel
 
 # 2. Cloniamo il codice sorgente nella tmp
 cd /tmp
+rm -rf rakuos-software
 git clone https://gitlab.com/rakuos/apps/rakuos-software.git
 cd rakuos-software
 
-# FIX CRUCIALE: Dirottiamo la cache di Cargo in /tmp per evitare l'errore di buildah
+# Configurazione della cache temporanea per Cargo
 mkdir -p /tmp/.cargo
 export CARGO_HOME=/tmp/.cargo
 
@@ -40,11 +42,13 @@ cargo build --release
 mkdir -p /usr/libexec/rakuos/software/
 cp target/release/rakuos-software-qt /usr/libexec/rakuos/software/rakuos-software-qt
 
-# 5. Pulizia profonda
+# 5. Pulizia profonda di tutto l'ambiente di compilazione
 cd /
 rm -rf /tmp/rakuos-software /tmp/.cargo
-dnf5.real -y remove cargo qt6-qtbase-devel qt6-qtdeclarative-devel \
-    qt6-qtsvg-devel qt6-qttools-devel || true
+dnf5.real -y remove cargo pkgconf-pkg-config \
+    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
+    glib2-devel openssl-devel flatpak-devel || true
+
     
 ## Nautilus open any terminal extension
 curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
