@@ -16,35 +16,25 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor
 ## Supporto Bluetooth per Nautilus e Dankshell
 dnf5.real -y install gvfs blueman
 
-# 1. Installiamo tutto ciò che serve per compilare
-dnf5.real -y install git cargo \
-    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
-    glib2-devel openssl-devel flatpak-devel gdk-pixbuf2-devel
+# 1. Prepariamo l'area di lavoro
+mkdir -p /tmp/rakuos-install
+cd /tmp/rakuos-install
 
-# 2. Prepariamo lo spazio
-mkdir -p /tmp/rakuos-build
-cd /tmp/rakuos-build
+# 2. Scarichiamo l'archivio degli artefatti (RPM)
+# Nota: Se il link scade, dovrai aggiornare questo URL con quello nuovo
+ARTIFACT_URL="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/14810203948/artifacts/download?file_type=archive"
+curl -L "$ARTIFACT_URL" -o artifacts.zip
 
-# 3. Cloniamo
-git clone https://gitlab.com/rakuos/apps/rakuos-software.git
-cd rakuos-software
+# 3. Estraiamo gli RPM
+unzip artifacts.zip
 
-# 4. Compilazione
-# Usiamo una cartella locale per la cache di cargo per evitare conflitti
-export CARGO_HOME=/tmp/rakuos-build/.cargo
-cargo build --release
+# 4. Installiamo gli RPM nel sistema (usando il percorso completo agli rpm estratti)
+# Assumendo che gli rpm siano nella cartella rpmbuild/RPMS/x86_64 come visto nello screenshot
+dnf5.real install -y ./rpmbuild/RPMS/x86_64/*.rpm
 
-# 5. Installazione
-mkdir -p /usr/libexec/rakuos/software/
-cp target/release/rakuos-software-qt /usr/libexec/rakuos/software/rakuos-software-qt
-
-# 6. Pulizia profonda (importante per mantenere l'immagine leggera)
+# 5. Pulizia profonda per mantenere l'immagine pulita
 cd /
-rm -rf /tmp/rakuos-build
-dnf5.real -y remove cargo \
-    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
-    glib2-devel openssl-devel flatpak-devel gdk-pixbuf2-devel
-
+rm -rf /tmp/rakuos-install
     
 ## Nautilus open any terminal extension
 curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
