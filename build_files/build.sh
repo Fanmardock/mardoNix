@@ -17,38 +17,22 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor
 dnf5.real -y install gvfs blueman
 
 ## ==========================================
-## COMPILAZIONE MANUALE DI RAKUOS-SOFTWARE (Fix GLib)
+## SCARICAMENTO BINARIO RAKUOS-SOFTWARE
 ## ==========================================
 
-# 1. Installiamo cargo, i file di sviluppo di Qt6 e le librerie di sistema necessarie (glib, openssl, flatpak)
-dnf5.real -y install git cargo pkgconf-pkg-config \
-    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
-    glib2-devel openssl-devel flatpak-devel
+# 1. Definiamo dove si trova l'ultimo rilascio (usiamo il ramo main)
+# Nota: verifica l'URL se il progetto ha un endpoint API per gli artefatti
+URL_BINARIO="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/artifacts/main/raw/rakuos-software-qt?job=build"
 
-# 2. Cloniamo il codice sorgente nella tmp
-cd /tmp
-rm -rf rakuos-software
-git clone https://gitlab.com/rakuos/apps/rakuos-software.git
-cd rakuos-software
+# 2. Installiamo solo lo stretto necessario per scaricare (curl)
+dnf5.real -y install curl
 
-# Configurazione della cache temporanea per Cargo
-mkdir -p /tmp/.cargo
-export CARGO_HOME=/tmp/.cargo
-
-# 3. Compiliamo in modalità Release
-cargo build --release
-
-# 4. Copiamo il binario al suo posto
+# 3. Scarichiamo il binario direttamente nella cartella di sistema
 mkdir -p /usr/libexec/rakuos/software/
-cp target/release/rakuos-software-qt /usr/libexec/rakuos/software/rakuos-software-qt
+curl -L $URL_BINARIO -o /usr/libexec/rakuos/software/rakuos-software-qt
 
-# 5. Pulizia profonda di tutto l'ambiente di compilazione
-cd /
-rm -rf /tmp/rakuos-software /tmp/.cargo
-dnf5.real -y remove cargo pkgconf-pkg-config \
-    qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtsvg-devel qt6-qttools-devel \
-    glib2-devel openssl-devel flatpak-devel || true
-
+# 4. Rendiamolo eseguibile
+chmod +x /usr/libexec/rakuos/software/rakuos-software-qt
     
 ## Nautilus open any terminal extension
 curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
