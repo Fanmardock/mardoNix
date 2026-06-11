@@ -11,11 +11,13 @@ dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 ## User apps (Aggiunto cosmic-store, icone e le librerie Qt6 per Wayland)
-dnf5.real -y install nautilus kitty mpv gnome-software gnome-system-monitor \
-    cosmic-store
+dnf5.real -y install nautilus kitty mpv gnome-system-monitor
     
 ## Supporto Bluetooth per Nautilus e Dankshell
 dnf5.real -y install gvfs blueman
+
+## Forza l'allineamento delle librerie grafiche core alla build corrente
+dnf5.real -y upgrade qt6-qtbase qt6-qtdeclarative --allowerasing || true
 
 ## Nautilus open any terminal extension
 curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
@@ -183,7 +185,7 @@ mv /etc/profile.d/origami-aliases.sh \
 
 ## Remove COSMIC shell e waybar (Rimosso cosmic-store da questa lista nera!)
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
-                    cosmic-settings-daemon waybar || true
+                    cosmic-settings-daemon cosmic-store waybar  || true
 
 ## CLEAN UP
 dnf5.real -y clean all
