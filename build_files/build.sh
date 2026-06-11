@@ -10,11 +10,12 @@ sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
-## User apps
-dnf5.real -y install nautilus kitty mpv gnome-software gnome-system-monitor
+## User apps (Aggiunto cosmic-store, icone e le librerie Qt6 per Wayland)
+dnf5.real -y install nautilus kitty mpv gnome-software gnome-system-monitor \
+    cosmic-store cosmic-icons qt6-qtbase qt6-qtbase-wayland qt6-qtdeclarative
 
 ## Nautilus open any terminal extension
-curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
+curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
   https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
 
 dnf5.real -y install nautilus-open-any-terminal
@@ -35,6 +36,11 @@ curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-${FEDORA_VERSION}/avengemedia-dms-fedora-${FEDORA_VERSION}.repo"
 
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
+
+## Gestione Bluetooth: Spento di default all'avvio, ma sbloccabile "on the fly"
+# Questa regola udev spegne l'antenna all'avvio senza killare il servizio systemd.
+mkdir -p /usr/lib/udev/rules.d/
+echo 'SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", ATTR{state}="0"' > /usr/lib/udev/rules.d/80-bluetooth-default-off.rules
 
 ## Verifica path reale dms-greeter
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
@@ -167,9 +173,9 @@ systemctl enable podman.socket
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
-## Remove COSMIC shell e waybar
+## Remove COSMIC shell e waybar (Rimosso cosmic-store da questa lista nera!)
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
-                    cosmic-settings-daemon cosmic-store waybar || true
+                    cosmic-settings-daemon waybar || true
 
 ## CLEAN UP
 dnf5.real -y clean all
