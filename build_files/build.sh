@@ -67,8 +67,12 @@ cat > /etc/bluetooth/main.conf << EOF
 AutoEnable=false
 EOF
 
-# Forza systemd a rimuovere il blocco hardware/software al boot
-systemctl enable rfkill-unblock@bluetooth.service
+# Regola UDEV per sbloccare il bluetooth a livello hardware/software al boot.
+# Questo sostituisce il servizio systemd mancante ed evita blocchi RFKILL.
+mkdir -p /lib/udev/rules.d/
+cat > /lib/udev/rules.d/99-bluetooth-rfkill-unblock.rules << EOF
+SUBSYSTEM=="bluetooth", ACTION=="add", RUN+="/usr/sbin/rfkill unblock bluetooth"
+EOF
 ## ==========================================
 
 ## Verifica path reale dms-greeter
