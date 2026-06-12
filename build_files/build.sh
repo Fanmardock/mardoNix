@@ -90,6 +90,7 @@ UNIT
 systemctl enable rakuos-bluetooth-unblock.service
 
 # 4. Redirezione del comando: intercetta il clic di Dankman e apre l'interfaccia di Blueman
+mkdir -p /usr/local/bin
 cat > /usr/local/bin/rfkill << 'EOF'
 #!/bin/bash
 if [[ "$*" == *"unblock bluetooth"* ]]; then
