@@ -3,19 +3,19 @@ set -ouex pipefail
 
 FEDORA_VERSION=$(rpm -E %fedora)
 
-## DNF5 Speedup (Applicato al config reale)
+## DNF5 Speedup
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
-## System apps (Aggiunto power-profiles-daemon con --allowerasing per rimuovere il conflitto tuned-ppd)
+## System apps (Manteniamo power-profiles-daemon per il risparmio energetico)
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 dnf5.real -y install power-profiles-daemon --allowerasing
 
-## User apps (Aggiunto rfkill per consentire lo sblocco hardware)
+## User apps
 dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
 
-## Supporto Bluetooth per Nautilus e Dankshell
+## Supporto Bluetooth standard di sistema (gvfs e l'interfaccia Blueman)
 dnf5.real -y install gvfs blueman
 
 ## ==========================================
@@ -34,7 +34,7 @@ unzip artifacts.zip
 # Installiamo gli RPM nel sistema
 dnf5.real install -y ./rpmbuild/RPMS/x86_64/*.rpm
 
-# Pulizia profonda per mantenere l'immagine pulita
+# Pulizia profonda
 cd /
 rm -rf /tmp/rakuos-install
 ## ==========================================
@@ -45,7 +45,7 @@ curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
 
 dnf5.real -y install nautilus-open-any-terminal
 
-## Gsettings Override (Fix per ambiente OCI senza D-Bus)
+## Gsettings Override
 mkdir -p /usr/share/glib-2.0/schemas/
 cat > /usr/share/glib-2.0/schemas/99_nautilus-open-any-terminal.gschema.override << EOF
 [com.github.stunkymonkey.nautilus-open-any-terminal]
@@ -63,46 +63,10 @@ curl --output-dir "/etc/yum.repos.d/" \
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## ==========================================
-## GESTIONE SERVIZI DI SISTEMA (POWER & BT)
+## CONFIGURAZIONE SERVIZI DI SISTEMA (POWER)
 ## ==========================================
-# 1. Imposta il demone per NON accendere automaticamente l'antenna all'avvio
-mkdir -p /etc/bluetooth/
-cat > /etc/bluetooth/main.conf << EOF
-[General]
-AutoEnable=false
-EOF
-
-# 2. Crea un servizio di boot personalizzato per sbloccare RFKILL in modo pulito
-cat > /usr/lib/systemd/system/rakuos-bluetooth-unblock.service << 'UNIT'
-[Unit]
-Description=Sblocco Hardware Bluetooth per RakuOS
-After=bluetooth.service
-Before=display-manager.service
-
-[Service]
-Type=oneshot
-ExecStart=/usr/sbin/rfkill unblock bluetooth
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-
-# 3. Abilita i servizi Bluetooth e Power Profiles
-systemctl enable rakuos-bluetooth-unblock.service
+# Abilita il servizio per i profili energetici di Dankshell
 systemctl enable power-profiles-daemon.service
-
-# 4. Redirezione del comando: inserito in /usr/bin per aggirare il blocco di /usr/local
-cat > /usr/bin/rfkill << 'EOF'
-#!/bin/bash
-if [[ "$*" == *"unblock bluetooth"* ]]; then
-    exec blueman-manager &
-    exit 0
-fi
-exec /usr/sbin/rfkill "$@"
-EOF
-
-chmod +x /usr/bin/rfkill
 ## ==========================================
 
 ## Verifica path reale dms-greeter
@@ -121,7 +85,7 @@ EOF
 chmod 0755 /etc/greetd
 chown -R root:root /etc/greetd
 
-## sysusers: crea gruppo video, render e utente greeter al boot
+## sysusers
 cat > /usr/lib/sysusers.d/greetd.conf << EOF
 g video 44 -
 g render 989 -
@@ -130,13 +94,13 @@ m greeter video
 m greeter render
 EOF
 
-## tmpfiles: crea /var/cache/dms-greeter al boot con permessi corretti
+## tmpfiles
 cat > /usr/lib/tmpfiles.d/dms-greeter.conf << EOF
 d /var/cache/dms-greeter 2770 greeter greeter - -
 Z /var/cache/dms-greeter 2770 greeter greeter - -
 EOF
 
-## Abilita greetd come display manager principale
+## Abilita greetd
 systemctl enable --force greetd.service
 mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
@@ -161,7 +125,7 @@ else
 fi
 
 ## -------------------------------------------------------
-## SERVIZIO FIRSTBOOT: sincronizza skel e sana i permessi di Chrome
+## SERVIZIO FIRSTBOOT
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
@@ -195,7 +159,7 @@ UNIT
 systemctl enable skel-sync.service
 
 ## -------------------------------------------------------
-## SERVIZIO FLATPAK: Installazione automatica al primo boot
+## SERVIZIO FLATPAK
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/flatpak-provisioning.service << 'UNIT'
 [Unit]
@@ -231,7 +195,7 @@ systemctl enable podman.socket
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
-## Remove COSMIC shell e waybar (Mantenendo la pulizia di cosmic-store)
+## Remove COSMIC shell e waybar
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
                     cosmic-settings-daemon cosmic-store waybar || true
 
