@@ -92,9 +92,8 @@ UNIT
 systemctl enable rakuos-bluetooth-unblock.service
 systemctl enable power-profiles-daemon.service
 
-# 4. Redirezione del comando: intercetta il clic di Dankman e apre l'interfaccia di Blueman
-mkdir -p /usr/local/bin
-cat > /usr/local/bin/rfkill << 'EOF'
+# 4. Redirezione del comando: inserito in /usr/bin per aggirare il blocco di /usr/local
+cat > /usr/bin/rfkill << 'EOF'
 #!/bin/bash
 if [[ "$*" == *"unblock bluetooth"* ]]; then
     exec blueman-manager &
@@ -103,7 +102,7 @@ fi
 exec /usr/sbin/rfkill "$@"
 EOF
 
-chmod +x /usr/local/bin/rfkill
+chmod +x /usr/bin/rfkill
 ## ==========================================
 
 ## Verifica path reale dms-greeter
