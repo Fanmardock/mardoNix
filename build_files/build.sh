@@ -3,41 +3,39 @@ set -ouex pipefail
 
 FEDORA_VERSION=$(rpm -E %fedora)
 
-## DNF5 Speedup (Applicato al config reale)
+## DNF5 Speedup
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
 ## System apps (Usando dnf5.real per bypassare l'overlay)
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
-## User apps (Aggiunto cosmic-store, icone e le librerie Qt6 per Wayland)
-dnf5.real -y install nautilus kitty mpv gnome-system-monitor
-    
+## User apps (Aggiunto rfkill per sblocco da Dankman, icone e librerie Qt6 per Wayland)
+dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
+
 ## Supporto Bluetooth per Nautilus e Dankshell
 dnf5.real -y install gvfs blueman
 
-# 1. Prepariamo l'area di lavoro
+## ==========================================
+## INSTALLAZIONE RAKUOS-SOFTWARE
+## ==========================================
 mkdir -p /tmp/rakuos-install
 cd /tmp/rakuos-install
 
-# 2. Scarichiamo l'archivio degli artefatti (RPM)
-# Nota: Se il link scade, dovrai aggiornare questo URL con quello nuovo
 ARTIFACT_URL="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/14810203948/artifacts/download?file_type=archive"
 curl -L "$ARTIFACT_URL" -o artifacts.zip
-
-# 3. Estraiamo gli RPM
 unzip artifacts.zip
 
-# 4. Installiamo gli RPM nel sistema (usando il percorso completo agli rpm estratti)
-# Assumendo che gli rpm siano nella cartella rpmbuild/RPMS/x86_64 come visto nello screenshot
+# Installazione RPM
 dnf5.real install -y ./rpmbuild/RPMS/x86_64/*.rpm
 
-# 5. Pulizia profonda per mantenere l'immagine pulita
+# Pulizia
 cd /
 rm -rf /tmp/rakuos-install
-    
+## ==========================================
+
 ## Nautilus open any terminal extension
-curl Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
+curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
   https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
 
 dnf5.real -y install nautilus-open-any-terminal
@@ -59,15 +57,19 @@ curl --output-dir "/etc/yum.repos.d/" \
 
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
-## Gestione Bluetooth: Spento di default all'avvio, ma sbloccabile "on the fly"
-# Questa regola udev spegne l'antenna all'avvio senza killare il servizio systemd.
-## Configura il Bluetooth per non connettersi automaticamente all'avvio
+## ==========================================
+## GESTIONE BLUETOOTH
+## ==========================================
+# Imposta il demone per NON accendere automaticamente l'antenna all'avvio
 mkdir -p /etc/bluetooth/
 cat > /etc/bluetooth/main.conf << EOF
 [General]
-# Impedisce al Bluetooth di accendere le antenne e cercare dispositivi al boot
 AutoEnable=false
 EOF
+
+# Forza systemd a rimuovere il blocco hardware/software al boot
+systemctl enable rfkill-unblock@bluetooth.service
+## ==========================================
 
 ## Verifica path reale dms-greeter
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
@@ -108,7 +110,6 @@ ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manage
 ## -------------------------------------------------------
 ## SKEL: configurazione default per nuovi utenti
 ## -------------------------------------------------------
-# Fix Bubblewrap/Chrome: Generiamo preventivamente i percorsi XDG nello skel
 mkdir -p /etc/skel/.local/share/applications
 mkdir -p /etc/skel/.config
 mkdir -p /etc/skel/.var/app
@@ -144,14 +145,10 @@ ExecStart=/usr/bin/bash -c '\
     uid=$(id -u "$user" 2>/dev/null) || continue; \
     [ "$uid" -ge 1000 ] || continue; \
     echo "Syncing skel to $home"; \
-    # Forza la creazione locale delle cartelle critiche per evitare bug di bwrap
     mkdir -p "$home"/.local/share/applications; \
     mkdir -p "$home"/.config; \
-    # Rimuove eventuali vecchie sandbox corrotte di Chrome create da root
     rm -rf "$home"/.var/app/com.google.Chrome; \
-    # Copia i file mancanti dallo skel
     cp -rn /etc/skel/. "$home"; \
-    # Sanatoria totale dei permessi: lito ogni cartella a root
     chown -R "$user":"$user" "$home"; \
     chmod -R u+rwX "$home"/.local "$home"/.config 2>/dev/null || true; \
   done; \
@@ -200,9 +197,9 @@ systemctl enable podman.socket
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
-## Remove COSMIC shell e waybar (Rimosso cosmic-store da questa lista nera!)
+## Remove COSMIC shell e waybar (incluso cosmic-store originario)
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
-                    cosmic-settings-daemon cosmic-store waybar  || true
+                    cosmic-settings-daemon cosmic-store waybar || true
 
 ## CLEAN UP
 dnf5.real -y clean all
