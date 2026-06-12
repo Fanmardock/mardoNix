@@ -61,7 +61,7 @@ curl --output-dir "/etc/yum.repos.d/" \
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## ==========================================
-## GESTIONE BLUETOOTH
+## GESTIONE BLUETOOTH & REDIREZIONE TOGGLE
 ## ==========================================
 # 1. Imposta il demone per NON accendere automaticamente l'antenna all'avvio
 mkdir -p /etc/bluetooth/
@@ -88,6 +88,18 @@ UNIT
 
 # 3. Abilita il servizio appena creato
 systemctl enable rakuos-bluetooth-unblock.service
+
+# 4. Redirezione del comando: intercetta il clic di Dankman e apre l'interfaccia di Blueman
+cat > /usr/local/bin/rfkill << 'EOF'
+#!/bin/bash
+if [[ "$*" == *"unblock bluetooth"* ]]; then
+    exec blueman-manager &
+    exit 0
+fi
+exec /usr/sbin/rfkill "$@"
+EOF
+
+chmod +x /usr/local/bin/rfkill
 ## ==========================================
 
 ## Verifica path reale dms-greeter
