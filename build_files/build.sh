@@ -6,9 +6,11 @@ FEDORA_VERSION=$(rpm -E %fedora)
 ## DNF5 Speedup (Applicato al config reale)
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
-## System apps (Aggiunto power-profiles-daemon per il risparmio energetico)
+## System apps (Aggiunto power-profiles-daemon con --allowerasing per rimuovere il conflitto tuned-ppd)
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
-    iotop sysstat lxqt-openssh-askpass lxpolkit parallel power-profiles-daemon
+    iotop sysstat lxqt-openssh-askpass lxpolkit parallel
+
+dnf5.real -y install power-profiles-daemon --allowerasing
 
 ## User apps (Aggiunto rfkill per consentire lo sblocco hardware)
 dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
