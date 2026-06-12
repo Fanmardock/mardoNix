@@ -6,9 +6,9 @@ FEDORA_VERSION=$(rpm -E %fedora)
 ## DNF5 Speedup (Applicato al config reale)
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
-## System apps (Usando dnf5.real per bypassare l'overlay)
+## System apps (Aggiunto power-profiles-daemon per il risparmio energetico)
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
-    iotop sysstat lxqt-openssh-askpass lxpolkit parallel
+    iotop sysstat lxqt-openssh-askpass lxpolkit parallel power-profiles-daemon
 
 ## User apps (Aggiunto rfkill per consentire lo sblocco hardware)
 dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
@@ -61,7 +61,7 @@ curl --output-dir "/etc/yum.repos.d/" \
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## ==========================================
-## GESTIONE BLUETOOTH & REDIREZIONE TOGGLE
+## GESTIONE SERVIZI DI SISTEMA (POWER & BT)
 ## ==========================================
 # 1. Imposta il demone per NON accendere automaticamente l'antenna all'avvio
 mkdir -p /etc/bluetooth/
@@ -86,8 +86,9 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 UNIT
 
-# 3. Abilita il servizio appena creato
+# 3. Abilita i servizi Bluetooth e Power Profiles
 systemctl enable rakuos-bluetooth-unblock.service
+systemctl enable power-profiles-daemon.service
 
 # 4. Redirezione del comando: intercetta il clic di Dankman e apre l'interfaccia di Blueman
 mkdir -p /usr/local/bin
