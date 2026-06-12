@@ -3,14 +3,14 @@ set -ouex pipefail
 
 FEDORA_VERSION=$(rpm -E %fedora)
 
-## DNF5 Speedup
+## DNF5 Speedup (Applicato al config reale)
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
 ## System apps (Usando dnf5.real per bypassare l'overlay)
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
-## User apps (Aggiunto rfkill per sblocco da Dankman, icone e librerie Qt6 per Wayland)
+## User apps (Aggiunto rfkill per consentire lo sblocco hardware)
 dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
 
 ## Supporto Bluetooth per Nautilus e Dankshell
@@ -22,18 +22,21 @@ dnf5.real -y install gvfs blueman
 mkdir -p /tmp/rakuos-install
 cd /tmp/rakuos-install
 
+# Scarichiamo l'archivio degli artefatti (RPM)
 ARTIFACT_URL="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/14810203948/artifacts/download?file_type=archive"
 curl -L "$ARTIFACT_URL" -o artifacts.zip
+
+# Estraiamo gli RPM
 unzip artifacts.zip
 
-# Installazione RPM
+# Installiamo gli RPM nel sistema
 dnf5.real install -y ./rpmbuild/RPMS/x86_64/*.rpm
 
-# Pulizia
+# Pulizia profonda per mantenere l'immagine pulita
 cd /
 rm -rf /tmp/rakuos-install
 ## ==========================================
-
+    
 ## Nautilus open any terminal extension
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
   https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
@@ -60,19 +63,31 @@ dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 ## ==========================================
 ## GESTIONE BLUETOOTH
 ## ==========================================
-# Imposta il demone per NON accendere automaticamente l'antenna all'avvio
+# 1. Imposta il demone per NON accendere automaticamente l'antenna all'avvio
 mkdir -p /etc/bluetooth/
 cat > /etc/bluetooth/main.conf << EOF
 [General]
 AutoEnable=false
 EOF
 
-# Regola UDEV per sbloccare il bluetooth a livello hardware/software al boot.
-# Questo sostituisce il servizio systemd mancante ed evita blocchi RFKILL.
-mkdir -p /lib/udev/rules.d/
-cat > /lib/udev/rules.d/99-bluetooth-rfkill-unblock.rules << EOF
-SUBSYSTEM=="bluetooth", ACTION=="add", RUN+="/usr/sbin/rfkill unblock bluetooth"
-EOF
+# 2. Crea un servizio di boot personalizzato per sbloccare RFKILL in modo pulito
+cat > /usr/lib/systemd/system/rakuos-bluetooth-unblock.service << 'UNIT'
+[Unit]
+Description=Sblocco Hardware Bluetooth per RakuOS
+After=bluetooth.service
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/rfkill unblock bluetooth
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# 3. Abilita il servizio appena creato
+systemctl enable rakuos-bluetooth-unblock.service
 ## ==========================================
 
 ## Verifica path reale dms-greeter
@@ -201,7 +216,7 @@ systemctl enable podman.socket
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
-## Remove COSMIC shell e waybar (incluso cosmic-store originario)
+## Remove COSMIC shell e waybar (Mantenendo la pulizia di cosmic-store)
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
                     cosmic-settings-daemon cosmic-store waybar || true
 
