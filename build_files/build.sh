@@ -19,20 +19,37 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
 dnf5.real -y install gvfs blueman
 
 ## ==========================================
-## INSTALLAZIONE RAKUOS-SOFTWARE
+## INSTALLAZIONE RAKUOS-SOFTWARE (PRE-COMPILATO)
 ## ==========================================
 mkdir -p /tmp/rakuos-install
 cd /tmp/rakuos-install
 
-# Scarichiamo l'archivio degli artefatti (RPM)
-ARTIFACT_URL="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/artifacts/main/download?job=build"
-curl -L "$ARTIFACT_URL" -o artifacts.zip
+echo "Recupero del binario pre-compilato di RakuOS Software..."
 
-# Estraiamo gli RPM
-unzip artifacts.zip
+# PIANO A: Scarica l'ultimo rilascio stabile ufficiale dalle Release di GitLab se accessibile
+curl -L "https://gitlab.com/api/v4/projects/rakuos%2Fapps%2Frakuos-software/releases/permalink/latest/downloads/rakuos-software" -o rakuos-software || true
 
-# Installiamo gli RPM nel sistema
-dnf5.real install -y ./rpmbuild/RPMS/x86_64/*.rpm
+# PIANO B (Blindato): Se le Release falliscono o sono vuote, estraiamo il binario 
+# direttamente dall'immagine del Container Registry ufficiale distribuito dagli sviluppatori.
+if [ ! -s rakuos-software ] || head -n 1 rakuos-software | grep -qE "(<!DOCTYPE html|<html)"; then
+    echo "Nessun binario diretto nelle Release. Estraggo dall'immagine del registro ufficiale..."
+    
+    IMAGE_TAG="registry.gitlab.com/rakuos/apps/rakuos-software:latest"
+    
+    # Crea un container fittizio temporaneo per poter navigare nei suoi file
+    CONTAINER_ID=$(podman create "$IMAGE_TAG")
+    
+    # Copia il binario già pronto fuori dal container (gestisce i due possibili percorsi standard)
+    podman cp "$CONTAINER_ID:/usr/bin/rakuos-software" ./rakuos-software || podman cp "$CONTAINER_ID:/usr/local/bin/rakuos-software" ./rakuos-software
+    
+    # Elimina il container temporaneo di appoggio
+    podman rm "$CONTAINER_ID"
+fi
+
+# Configurazione permessi e posizionamento finale nel sistema
+chmod +x rakuos-software
+mkdir -p /usr/bin
+mv rakuos-software /usr/bin/rakuos-software
 
 # Pulizia profonda
 cd /
@@ -197,7 +214,7 @@ mv /etc/profile.d/origami-aliases.sh \
 
 ## Remove COSMIC shell e waybar
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
-                    cosmic-settings-daemon cosmic-store waybar || true
+                cosmic-settings-daemon cosmic-store waybar || true
 
 ## CLEAN UP
 dnf5.real -y clean all
