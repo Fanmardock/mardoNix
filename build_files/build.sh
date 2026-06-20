@@ -25,7 +25,7 @@ mkdir -p /tmp/rakuos-install
 cd /tmp/rakuos-install
 
 # Scarichiamo l'archivio degli artefatti (RPM)
-ARTIFACT_URL="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/14810203948/artifacts/download?file_type=archive"
+ARTIFACT_URL="https://gitlab.com/rakuos/apps/rakuos-software/-/jobs/artifacts/main/download?job=build"
 curl -L "$ARTIFACT_URL" -o artifacts.zip
 
 # Estraiamo gli RPM
