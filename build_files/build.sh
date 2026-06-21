@@ -51,7 +51,7 @@ chmod +x rakuos-software
 mkdir -p /usr/bin
 mv rakuos-software /usr/bin/rakuos-software
 
-# Pulizia profonda
+# Pulizia profonda della cartella di installazione
 cd /
 rm -rf /tmp/rakuos-install
 ## ==========================================
@@ -142,18 +142,23 @@ else
 fi
 
 ## -------------------------------------------------------
-## SERVIZIO FIRSTBOOT
+## SERVIZIO FIRSTBOOT (Include Fix Unmute Audio Permanente)
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
-Description=Sync /etc/skel to existing user homes on first boot
-After=local-fs.target systemd-sysusers.service
+Description=Sync /etc/skel to existing user homes on first boot and configure audio
+After=local-fs.target systemd-sysusers.service sound.target
 ConditionPathExists=!/var/lib/skel-sync.done
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/bash -c '\
+  echo "Sblocco canali audio ALSA (Speaker e Master)..."; \
+  /usr/bin/amixer -c 0 set Master unmute 70% 2>/dev/null || true; \
+  /usr/bin/amixer -c 0 set Speaker unmute 70% 2>/dev/null || true; \
+  /usr/bin/amixer -c 0 set Front unmute 70% 2>/dev/null || true; \
+  /usr/bin/alsactl store 0 2>/dev/null || true; \
   for home in /var/home/*/; do \
     [ -d "$home" ] || continue; \
     user=$(basename "$home"); \
