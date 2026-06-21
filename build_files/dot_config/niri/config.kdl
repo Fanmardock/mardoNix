@@ -279,6 +279,7 @@ layout {
 // Aggiungi queste righe fondamentali:
 spawn-at-startup "lxpolkit"
 spawn-at-startup "blueman-applet"
+spawn-at-startup "amixer" "sset" "Speaker" "unmute"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -659,3 +660,5 @@ binds {
 }
 
 include "dms/cursor.kdl"
+
+include "dms/outputs.kdl"
