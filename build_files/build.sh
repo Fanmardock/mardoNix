@@ -23,8 +23,8 @@ dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
 
 dnf5.real -y install power-profiles-daemon --allowerasing
 
-## Software Center ad Alte Prestazioni (Discover)
-dnf5.real -y install plasma-discover plasma-discover-flatpak
+## Software Center ad Alte Prestazioni (Discover + Backend PackageKit + Moduli QML)
+dnf5.real -y install plasma-discover plasma-discover-flatpak plasma-discover-packagekit kuserfeedback
 
 ## User apps
 dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
