@@ -7,12 +7,12 @@ FEDORA_VERSION=$(rpm -E %fedora)
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
 ## ==========================================
-## FIX CORE: REQUISITI GRUPPI DI SISTEMA
+## FIX CORE: REQUISITI GRUPPI DI SISTEMA (AUDIO & BLUETOOTH)
 ## ==========================================
-# Forza la creazione dei gruppi fondamentali mancanti segnalati nel journal.
-# Questo permette a udev e tmpfiles di assegnare i permessi corretti a schede audio e video.
+# Creazione dei gruppi fondamentali mancanti segnalati nel journal.
+# Inclusi 'lp' e 'bluetooth' per risolvere il fallimento di hci0.
 echo "Verifica e creazione dei gruppi core del sistema..."
-for grp in audio video render disk kvm input tty clock utmp plugdev tss; do
+for grp in audio video render disk kvm input tty clock utmp plugdev tss lp bluetooth; do
     getent group "$grp" &>/dev/null || groupadd -r "$grp"
 done
 
@@ -138,7 +138,6 @@ ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manage
 ## -------------------------------------------------------
 ## FIX AGGRESSIVO UNMUTE AUDIO AD OGNI LOGIN
 ## -------------------------------------------------------
-# Script globale in profile.d per forzare l'unmute quando la sessione dell'utente si avvia.
 mkdir -p /etc/profile.d
 cat > /etc/profile.d/unmute-audio.sh << 'EOF'
 if command -v amixer &> /dev/null; then
