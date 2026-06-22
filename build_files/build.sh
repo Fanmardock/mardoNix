@@ -14,46 +14,21 @@ for grp in audio video render disk kvm input tty clock utmp plugdev tss lp bluet
     getent group "$grp" &>/dev/null || groupadd -r "$grp"
 done
 
-# Crea l'utente di sistema tss se mancante (richiesto da tpm2/tmpfiles nei log)
+# Crea l'utente di sistema tss se mancante (richiesto da tpm2/tmpfiles)
 getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
 
-## System apps (Manteniamo power-profiles-daemon per il risparmio energetico)
+## System apps
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 dnf5.real -y install power-profiles-daemon --allowerasing
 
+## Software Center ad Alte Prestazioni (Discover)
+dnf5.real -y install plasma-discover plasma-discover-flatpak
+
 ## User apps
-dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
+dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
 
-## Supporto Bluetooth standard di sistema (gvfs e l'interfaccia Blueman)
-dnf5.real -y install gvfs blueman
-
-## ==========================================
-## INSTALLAZIONE RAKUOS-SOFTWARE (DIRETTA SENZA VINCOLI)
-## ==========================================
-mkdir -p /tmp/rakuos-install
-cd /tmp/rakuos-install
-
-echo "Download di rakuos-software dal repository..."
-# Scarica il file (script/wrapper) dalla cartella resources
-curl -sL --fail "https://gitlab.com/rakuos/apps/rakuos-software/-/raw/main/resources/rakuos-software" -o rakuos-software
-
-# Verifica semplicemente che il file sia stato scaricato e non sia vuoto
-if [ -s rakuos-software ]; then
-    chmod +x rakuos-software
-    mkdir -p /usr/bin
-    mv rakuos-software /usr/bin/rakuos-software
-    echo "rakuos-software configurato con successo."
-else
-    echo "❌ ERRORE CRITICO: Il file scaricato è vuoto o mancante."
-    exit 1
-fi
-
-cd /
-rm -rf /tmp/rakuos-install
-## ==========================================
-    
 ## Nautilus open any terminal extension
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
   https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
