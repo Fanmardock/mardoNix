@@ -6,6 +6,19 @@ FEDORA_VERSION=$(rpm -E %fedora)
 ## DNF5 Speedup
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
+## ==========================================
+## FIX CORE: REQUISITI GRUPPI DI SISTEMA
+## ==========================================
+# Forza la creazione dei gruppi fondamentali mancanti segnalati nel journal.
+# Questo permette a udev e tmpfiles di assegnare i permessi corretti a schede audio e video.
+echo "Verifica e creazione dei gruppi core del sistema..."
+for grp in audio video render disk kvm input tty clock utmp plugdev tss; do
+    getent group "$grp" &>/dev/null || groupadd -r "$grp"
+done
+
+# Crea l'utente di sistema tss se mancante (richiesto da tpm2/tmpfiles nei log)
+getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
+
 ## System apps (Manteniamo power-profiles-daemon per il risparmio energetico)
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel
@@ -123,6 +136,25 @@ mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 
 ## -------------------------------------------------------
+## FIX AGGRESSIVO UNMUTE AUDIO AD OGNI LOGIN
+## -------------------------------------------------------
+# Script globale in profile.d per forzare l'unmute quando la sessione dell'utente si avvia.
+mkdir -p /etc/profile.d
+cat > /etc/profile.d/unmute-audio.sh << 'EOF'
+if command -v amixer &> /dev/null; then
+    (
+        sleep 3
+        amixer -c 0 set Master unmute 70% &>/dev/null || true
+        amixer -c 0 set Speaker unmute 70% &>/dev/null || true
+        amixer -c 0 set Front unmute 70% &>/dev/null || true
+        amixer set Master unmute 70% &>/dev/null || true
+        amixer set Speaker unmute 70% &>/dev/null || true
+    ) &
+fi
+EOF
+chmod +x /etc/profile.d/unmute-audio.sh
+
+## -------------------------------------------------------
 ## SKEL: configurazione default per nuovi utenti
 ## -------------------------------------------------------
 mkdir -p /etc/skel/.local/share/applications
@@ -142,23 +174,18 @@ else
 fi
 
 ## -------------------------------------------------------
-## SERVIZIO FIRSTBOOT (Include Fix Unmute Audio Permanente)
+## SERVIZIO FIRSTBOOT
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
-Description=Sync /etc/skel to existing user homes on first boot and configure audio
-After=local-fs.target systemd-sysusers.service sound.target
+Description=Sync /etc/skel to existing user homes on first boot
+After=local-fs.target systemd-sysusers.service
 ConditionPathExists=!/var/lib/skel-sync.done
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/bash -c '\
-  echo "Sblocco canali audio ALSA (Speaker e Master)..."; \
-  /usr/bin/amixer -c 0 set Master unmute 70% 2>/dev/null || true; \
-  /usr/bin/amixer -c 0 set Speaker unmute 70% 2>/dev/null || true; \
-  /usr/bin/amixer -c 0 set Front unmute 70% 2>/dev/null || true; \
-  /usr/bin/alsactl store 0 2>/dev/null || true; \
   for home in /var/home/*/; do \
     [ -d "$home" ] || continue; \
     user=$(basename "$home"); \
