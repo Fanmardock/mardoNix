@@ -9,8 +9,7 @@ sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 ## ==========================================
 ## FIX CORE: REQUISITI GRUPPI DI SISTEMA (AUDIO & BLUETOOTH)
 ## ==========================================
-# Creazione dei gruppi fondamentali mancanti segnalati nel journal.
-# Inclusi 'lp' e 'bluetooth' per risolvere il fallimento di hci0.
+# Forza la creazione dei gruppi fondamentali mancanti nel sistema base
 echo "Verifica e creazione dei gruppi core del sistema..."
 for grp in audio video render disk kvm input tty clock utmp plugdev tss lp bluetooth; do
     getent group "$grp" &>/dev/null || groupadd -r "$grp"
@@ -32,30 +31,27 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
 dnf5.real -y install gvfs blueman
 
 ## ==========================================
-## INSTALLAZIONE RAKUOS-SOFTWARE (PRE-COMPILATO)
+## INSTALLAZIONE RAKUOS-SOFTWARE (VERIFICA ELF BINARY)
 ## ==========================================
 mkdir -p /tmp/rakuos-install
 cd /tmp/rakuos-install
 
 echo "Recupero del binario pre-compilato di RakuOS Software..."
 
-# PIANO A: Scarica l'ultimo rilascio stabile ufficiale dalle Release di GitLab se accessibile
+# PIANO A: Tenta il download diretto dalla release di GitLab
 curl -L "https://gitlab.com/api/v4/projects/rakuos%2Fapps%2Frakuos-software/releases/permalink/latest/downloads/rakuos-software" -o rakuos-software || true
 
-# PIANO B (Blindato): Se le Release falliscono o sono vuote, estraiamo il binario 
-# direttamente dall'immagine del Container Registry ufficiale distribuito dagli sviluppatori.
-if [ ! -s rakuos-software ] || head -n 1 rakuos-software | grep -qE "(<!DOCTYPE html|<html)"; then
-    echo "Nessun binario diretto nelle Release. Estraggo dall'immagine del registro ufficiale..."
+# PIANO B (Blindato): Se il file non è un vero binario ELF eseguibile (es. se è un testo HTML/JSON di errore), lo estrae dal Container Registry
+if [ ! -s rakuos-software ] || [ "$(head -c 4 rakuos-software 2>/dev/null)" != $'\x7fELF' ]; then
+    echo "Il download diretto non ha prodotto un binario ELF valido. Estraggo dall'immagine del registro ufficiale..."
     
     IMAGE_TAG="registry.gitlab.com/rakuos/apps/rakuos-software:latest"
-    
-    # Crea un container fittizio temporaneo per poter navigare nei suoi file
     CONTAINER_ID=$(podman create "$IMAGE_TAG")
     
-    # Copia il binario già pronto fuori dal container (gestisce i due possibili percorsi standard)
-    podman cp "$CONTAINER_ID:/usr/bin/rakuos-software" ./rakuos-software || podman cp "$CONTAINER_ID:/usr/local/bin/rakuos-software" ./rakuos-software
+    # Estrazione con fallbacks sui percorsi interni
+    podman cp "$CONTAINER_ID:/usr/bin/rakuos-software" ./rakuos-software || \
+    podman cp "$CONTAINER_ID:/usr/local/bin/rakuos-software" ./rakuos-software || true
     
-    # Elimina il container temporaneo di appoggio
     podman rm "$CONTAINER_ID"
 fi
 
@@ -64,7 +60,7 @@ chmod +x rakuos-software
 mkdir -p /usr/bin
 mv rakuos-software /usr/bin/rakuos-software
 
-# Pulizia profonda della cartella di installazione
+# Pulizia della cartella temporanea
 cd /
 rm -rf /tmp/rakuos-install
 ## ==========================================
@@ -93,10 +89,10 @@ curl --output-dir "/etc/yum.repos.d/" \
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## ==========================================
-## CONFIGURAZIONE SERVIZI DI SISTEMA (POWER)
+## CONFIGURAZIONE SERVIZI DI SISTEMA 
 ## ==========================================
-# Abilita il servizio per i profili energetici di Dankshell
 systemctl enable power-profiles-daemon.service
+systemctl enable bluetooth.service
 ## ==========================================
 
 ## Verifica path reale dms-greeter
@@ -173,32 +169,42 @@ else
 fi
 
 ## -------------------------------------------------------
-## SERVIZIO FIRSTBOOT
+## SERVIZIO REFRESH UTENTI E LIVELLO PERMESSI (Ad ogni boot)
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
-Description=Sync /etc/skel to existing user homes on first boot
+Description=Sync system groups and etc skel configuration for local users
 After=local-fs.target systemd-sysusers.service
-ConditionPathExists=!/var/lib/skel-sync.done
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/bash -c '\
+  echo "Allineamento gruppi hardware per gli utenti locali..."; \
   for home in /var/home/*/; do \
     [ -d "$home" ] || continue; \
     user=$(basename "$home"); \
     uid=$(id -u "$user" 2>/dev/null) || continue; \
     [ "$uid" -ge 1000 ] || continue; \
-    echo "Syncing skel to $home"; \
-    mkdir -p "$home"/.local/share/applications; \
-    mkdir -p "$home"/.config; \
-    rm -rf "$home"/.var/app/com.google.Chrome; \
-    cp -rn /etc/skel/. "$home"; \
-    chown -R "$user":"$user" "$home"; \
-    chmod -R u+rwX "$home"/.local "$home"/.config 2>/dev/null || true; \
+    echo "Assegnazione gruppi audio, video e bluetooth a $user..."; \
+    /usr/sbin/usermod -aG audio,video,render,input,kvm,lp,bluetooth "$user" || true; \
   done; \
-  touch /var/lib/skel-sync.done'
+  if [ ! -f /var/lib/skel-sync.done ]; then \
+    for home in /var/home/*/; do \
+      [ -d "$home" ] || continue; \
+      user=$(basename "$home"); \
+      uid=$(id -u "$user" 2>/dev/null) || continue; \
+      [ "$uid" -ge 1000 ] || continue; \
+      echo "Inizializzazione skel iniziale in $home"; \
+      mkdir -p "$home"/.local/share/applications; \
+      mkdir -p "$home"/.config; \
+      rm -rf "$home"/.var/app/com.google.Chrome; \
+      cp -rn /etc/skel/. "$home"; \
+      chown -R "$user":"$user" "$home"; \
+      chmod -R u+rwX "$home"/.local "$home"/.config 2>/dev/null || true; \
+    done; \
+    touch /var/lib/skel-sync.done; \
+  fi'
 
 [Install]
 WantedBy=multi-user.target
