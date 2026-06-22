@@ -30,55 +30,23 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
 dnf5.real -y install gvfs blueman
 
 ## ==========================================
-## INSTALLAZIONE RAKUOS-SOFTWARE (FALLBACK INTELLIGENTE)
+## INSTALLAZIONE RAKUOS-SOFTWARE (RAW REPOSITORY BLINDATO)
 ## ==========================================
 mkdir -p /tmp/rakuos-install
 cd /tmp/rakuos-install
 
-echo "Recupero del binario pre-compilato di RakuOS Software..."
-DOWNLOAD_SUCCESS=false
+echo "Download del binario pre-compilato dalla cartella resources del repository..."
+# Scarica direttamente il file grezzo (raw) bypassando le API delle release
+curl -sL --fail "https://gitlab.com/rakuos/apps/rakuos-software/-/raw/main/resources/rakuos-software" -o rakuos-software
 
-# PIANO A: Tenta il download diretto dalla release di GitLab (evita il crash se restituisce 404)
-if curl -sL --fail "https://gitlab.com/api/v4/projects/rakuos%2Fapps%2Frakuos-software/releases/permalink/latest/downloads/rakuos-software" -o rakuos-software 2>/dev/null; then
-    if [ -s rakuos-software ] && [ "$(head -c 4 rakuos-software 2>/dev/null)" = $'\x7fELF' ]; then
-        DOWNLOAD_SUCCESS=true
-    fi
-fi
-
-# PIANO B: Se il download fallisce, prova a scansionare il Container Registry testando vari tag comuni
-if [ "$DOWNLOAD_SUCCESS" = false ]; then
-    echo "Il download diretto ha restituito 404 o non è un ELF valido. Tento il recupero dal Registry..."
-    for tag in latest main master; do
-        IMAGE_TAG="registry.gitlab.com/rakuos/apps/rakuos-software:${tag}"
-        echo "Proviamo con il tag: ${tag}..."
-        
-        # Il costrutto 'if CONTAINER_ID=$(...)' evita che set -e interrompa la build in caso di errore 125
-        if CONTAINER_ID=$(podman create "$IMAGE_TAG" 2>/dev/null); then
-            if podman cp "$CONTAINER_ID:/usr/bin/rakuos-software" ./rakuos-software &>/dev/null || \
-               podman cp "$CONTAINER_ID:/usr/local/bin/rakuos-software" ./rakuos-software &>/dev/null; then
-                
-                podman rm "$CONTAINER_ID" >/dev/null
-                if [ -s rakuos-software ] && [ "$(head -c 4 rakuos-software 2>/dev/null)" = $'\x7fELF' ]; then
-                    echo "Binario valido trovato nel tag dell'immagine: ${tag}!"
-                    DOWNLOAD_SUCCESS=true
-                    break
-                fi
-            else
-                podman rm "$CONTAINER_ID" >/dev/null
-            fi
-        fi
-    done
-fi
-
-# Validazione finale dell'eseguibile prima di spostarlo in /usr/bin
-if [ "$DOWNLOAD_SUCCESS" = true ]; then
+# Verifica formale che sia un vero binario ELF eseguibile per Linux
+if [ -s rakuos-software ] && [ "$(head -c 4 rakuos-software 2>/dev/null)" = $'\x7fELF' ]; then
     chmod +x rakuos-software
     mkdir -p /usr/bin
     mv rakuos-software /usr/bin/rakuos-software
-    echo "RakuOS Software configurato correttamente."
+    echo "rakuos-software installato con successo."
 else
-    echo "❌ ERRORE CRITICO: Impossibile trovare un binario ELF valido per rakuos-software."
-    echo "Verifica l'URL delle release o controlla quale sia il tag corretto sul tuo Container Registry."
+    echo "❌ ERRORE CRITICO: Il file scaricato da resources non è un binario ELF valido."
     exit 1
 fi
 
