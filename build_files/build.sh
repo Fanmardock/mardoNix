@@ -30,23 +30,23 @@ dnf5.real -y install nautilus kitty mpv gnome-system-monitor rfkill
 dnf5.real -y install gvfs blueman
 
 ## ==========================================
-## INSTALLAZIONE RAKUOS-SOFTWARE (RAW REPOSITORY BLINDATO)
+## INSTALLAZIONE RAKUOS-SOFTWARE (DIRETTA SENZA VINCOLI)
 ## ==========================================
 mkdir -p /tmp/rakuos-install
 cd /tmp/rakuos-install
 
-echo "Download del binario pre-compilato dalla cartella resources del repository..."
-# Scarica direttamente il file grezzo (raw) bypassando le API delle release
+echo "Download di rakuos-software dal repository..."
+# Scarica il file (script/wrapper) dalla cartella resources
 curl -sL --fail "https://gitlab.com/rakuos/apps/rakuos-software/-/raw/main/resources/rakuos-software" -o rakuos-software
 
-# Verifica formale che sia un vero binario ELF eseguibile per Linux
-if [ -s rakuos-software ] && [ "$(head -c 4 rakuos-software 2>/dev/null)" = $'\x7fELF' ]; then
+# Verifica semplicemente che il file sia stato scaricato e non sia vuoto
+if [ -s rakuos-software ]; then
     chmod +x rakuos-software
     mkdir -p /usr/bin
     mv rakuos-software /usr/bin/rakuos-software
-    echo "rakuos-software installato con successo."
+    echo "rakuos-software configurato con successo."
 else
-    echo "❌ ERRORE CRITICO: Il file scaricato da resources non è un binario ELF valido."
+    echo "❌ ERRORE CRITICO: Il file scaricato è vuoto o mancante."
     exit 1
 fi
 
