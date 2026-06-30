@@ -23,15 +23,12 @@ dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
 
 dnf5.real -y install power-profiles-daemon --allowerasing
 
-## ==========================================
-## SOFTWARE CENTER (Discover ottimizzato per Ambiente Atomico + Niri Wayland)
-## ==========================================
-# 1. Installiamo Discover e il solo backend Flatpak (RIMOSSO plasma-discover-packagekit)
-# 2. Aggiungiamo i pacchetti Qt6-Wayland e Kirigami indispensabili per avviarsi sotto Niri
+## Software Center ad Alte Prestazioni (Discover + Moduli Qt6/Wayland/Kirigami)
+# Sostituito kuserfeedback con kf6-kuserfeedback e rimosso il backend packagekit per evitare il SIGSEGV
 dnf5.real -y install \
     plasma-discover \
     plasma-discover-flatpak \
-    kuserfeedback \
+    kf6-kuserfeedback \
     qt6-qtwayland \
     qt5-qtwayland \
     kf6-kirigami \
