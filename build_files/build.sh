@@ -19,10 +19,12 @@ getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/no
 
 ## System apps
 dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
-    iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
-    qt6-qtwayland qt5-qtwayland hicolor-icon-theme
+    iotop sysstat lxqt-openssh-askpass lxpolkit parallel
 
 dnf5.real -y install power-profiles-daemon --allowerasing
+
+## Software Center (COSMIC Store)
+dnf5.real -y install cosmic-store
 
 ## User apps
 dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
@@ -177,4 +179,44 @@ systemctl enable skel-sync.service
 ## -------------------------------------------------------
 ## SERVIZIO FLATPAK
 ## -------------------------------------------------------
-cat > /usr/lib/systemd/system/flatpak-provision
+cat > /usr/lib/systemd/system/flatpak-provisioning.service << 'UNIT'
+[Unit]
+Description=Install system Flatpaks on first boot
+After=network-online.target skel-sync.service
+Wants=network-online.target
+ConditionPathExists=!/var/lib/flatpak-provisioning.done
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/bash -c '\
+  echo "Aggiunta repository Flathub..."; \
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; \
+  echo "Installazione/Aggiornamento BambuStudio..."; \
+  flatpak install --noninteractive --or-update flathub com.bambulab.BambuStudio || true; \
+  echo "Installazione/Aggiornamento Komikku..."; \
+  flatpak install --noninteractive --or-update flathub info.febvre.Komikku || true; \
+  echo "Installazione/Aggiornamento Google Chrome..."; \
+  flatpak install --noninteractive --or-update flathub com.google.Chrome || true; \
+  touch /var/lib/flatpak-provisioning.done'
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl enable flatpak-provisioning.service
+
+## Enable podman socket
+systemctl enable podman.socket
+
+## Disable Origami tips
+mv /etc/profile.d/origami-aliases.sh \
+   /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
+
+## Remove COSMIC shell e waybar (Manteniamo cosmic-store)
+dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
+                cosmic-settings-daemon waybar || true
+
+## CLEAN UP
+dnf5.real -y clean all
+rm -rf /run/dnf /run/selinux-policy /var/cache/dnf /var/cache/yum /tmp/*
