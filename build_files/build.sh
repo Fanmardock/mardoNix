@@ -7,6 +7,13 @@ FEDORA_VERSION=$(rpm -E %fedora)
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
 ## ==========================================
+## REPOSITORY ADDIZIONALI
+## ==========================================
+# RPM Fusion (Necessari per i driver hardware akmod come xpadneo)
+dnf5.real -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm \
+                    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
+
+## ==========================================
 ## FIX CORE: REQUISITI GRUPPI DI SISTEMA (AUDIO & BLUETOOTH)
 ## ==========================================
 echo "Verifica e creazione dei gruppi core del sistema..."
@@ -25,6 +32,9 @@ dnf5.real -y install power-profiles-daemon --allowerasing
 
 ## Software Center (COSMIC Store)
 dnf5.real -y install cosmic-store
+
+## Driver Controller Xbox (xpadneo)
+dnf5.real -y install akmod-xpadneo xpadneo-tools
 
 ## User apps
 dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
@@ -57,6 +67,18 @@ dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 ## ==========================================
 systemctl enable power-profiles-daemon.service
 systemctl enable bluetooth.service
+
+## FIX BLUETOOTH: Forza l'accensione hardware ed evita blocchi radio al boot
+echo "Configurazione AutoEnable per il Bluetooth..."
+mkdir -p /etc/bluetooth
+if [ -f /etc/bluetooth/main.conf ]; then
+    sed -i 's/^#\?AutoEnable=.*/AutoEnable=true/' /etc/bluetooth/main.conf
+else
+    cat > /etc/bluetooth/main.conf << EOF
+[Policy]
+AutoEnable=true
+EOF
+fi
 ## ==========================================
 
 ## Verifica path reale dms-greeter
@@ -213,7 +235,7 @@ systemctl enable podman.socket
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
-## Remove COSMIC shell e waybar (MANTENIAMO cosmic-settings-daemon)
+## Remove COSMIC shell e waybar (MANTENIAMO cosmic-settings-daemon per Noctua/Store)
 dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings waybar || true
 
 ## CLEAN UP
