@@ -34,7 +34,7 @@ dnf5.real -y install power-profiles-daemon --allowerasing
 dnf5.real -y install cosmic-store
 
 ## Driver Controller Xbox (xpadneo)
-dnf5.real -y install akmod-xpadneo xpadneo-tools
+dnf5.real -y install akmod-xpadneo
 
 ## User apps
 dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
