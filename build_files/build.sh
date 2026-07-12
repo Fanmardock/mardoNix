@@ -213,9 +213,8 @@ systemctl enable podman.socket
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
-## Remove COSMIC shell e waybar (Manteniamo cosmic-store)
-dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings \
-                cosmic-settings-daemon waybar || true
+## Remove COSMIC shell e waybar (MANTENIAMO cosmic-settings-daemon)
+dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings waybar || true
 
 ## CLEAN UP
 dnf5.real -y clean all
