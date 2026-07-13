@@ -9,7 +9,7 @@ sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 ## ==========================================
 ## REPOSITORY ADDIZIONALI
 ## ==========================================
-# RPM Fusion (Necessari per i driver hardware akmod come xpadneo)
+# RPM Fusion (Necessari per i driver hardware come xpadneo)
 dnf5.real -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm \
                     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
 
@@ -75,32 +75,20 @@ curl --output-dir "/etc/yum.repos.d/" \
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## ==========================================
-## CONFIGURAZIONE SERVIZI E FIX HARDWARE
+## CONFIGURAZIONE SERVIZI E ABILITAZIONE HARDWARE
 ## ==========================================
 systemctl enable power-profiles-daemon.service
 systemctl enable bluetooth.service
 
-## FIX BLUETOOTH: Forza l'accensione hardware ed evita blocchi radio al boot
-echo "Configurazione AutoEnable per il Bluetooth..."
-mkdir -p /etc/bluetooth
-if [ -f /etc/bluetooth/main.conf ]; then
-    sed -i 's/^#\?AutoEnable=.*/AutoEnable=true/' /etc/bluetooth/main.conf
-else
-    cat > /etc/bluetooth/main.conf << EOF
-[Policy]
-AutoEnable=true
-EOF
-fi
-
-## FIX RFKILL: Sblocco hardware automatico via Udev (Risolve il blocco della Shell DMS)
-echo "Configurazione regola Udev per prevenire il soft-block del Bluetooth..."
+# 1. FIX KERNEL (UDEV): Forza lo sblocco radio al boot per avere il Bluetooth attivo all'avvio
+echo "Configurazione regola Udev per il Bluetooth attivo al boot..."
 mkdir -p /usr/lib/udev/rules.d
 cat > /usr/lib/udev/rules.d/99-bluetooth-rfkill.rules << 'EOF'
 SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", RUN+="/usr/sbin/rfkill unblock bluetooth"
 EOF
 
-## FIX POLKIT: Permessi Bluetooth Passwordless per il gruppo wheel
-echo "Configurazione regole Polkit per il Bluetooth in DMS..."
+# 2. FIX INTERFACCIA (POLKIT): Consente alla Shell DMS di spegnere/accendere il Bluetooth senza password
+echo "Configurazione regole Polkit per il gruppo wheel..."
 mkdir -p /usr/share/polkit-1/rules.d
 cat > /usr/share/polkit-1/rules.d/99-bluetooth-dms.rules << 'EOF'
 polkit.addRule(function(action, subject) {
@@ -110,28 +98,6 @@ polkit.addRule(function(action, subject) {
         return polkit.Result.YES;
     }
 });
-EOF
-
-## FIX D-BUS: Sblocca la comunicazione diretta tra la Shell e BlueZ per il gruppo wheel
-echo "Configurazione criteri D-Bus per il Bluetooth..."
-mkdir -p /usr/share/dbus-1/system.d
-cat > /usr/share/dbus-1/system.d/99-bluetooth-wheel.conf << 'EOF'
-<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
- "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
-<busconfig>
-  <policy group="wheel">
-    <allow send_destination="org.bluez"/>
-    <allow send_interface="org.bluez.Adapter1"/>
-    <allow send_interface="org.bluez.Device1"/>
-  </policy>
-</busconfig>
-EOF
-
-## FIX XBOX CONTROLLER: Disabilita ERTM per stabilità del modulo bluetooth
-echo "Disabilitazione ERTM per compatibilità controller Xbox..."
-mkdir -p /usr/lib/modprobe.d
-cat > /usr/lib/modprobe.d/xbox_bt.conf << EOF
-options bluetooth disable_ertm=1
 EOF
 ## ==========================================
 
@@ -172,7 +138,7 @@ mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 
 ## -------------------------------------------------------
-## FIX AGGRESSIVO UNMUTE AUDIO AD ODNI LOGIN
+## FIX AGGRESSIVO UNMUTE AUDIO AD OGNI LOGIN
 ## -------------------------------------------------------
 mkdir -p /etc/profile.d
 cat > /etc/profile.d/unmute-audio.sh << 'EOF'
