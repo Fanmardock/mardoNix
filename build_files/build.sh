@@ -14,12 +14,24 @@ dnf5.real -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-re
                     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
 
 ## ==========================================
-## FIX CORE: REQUISITI GRUPPI DI SISTEMA (AUDIO & BLUETOOTH)
+## CONFIGURAZIONE GRUPPI CORE (SYSUSERS)
 ## ==========================================
-echo "Verifica e creazione dei gruppi core del sistema..."
-for grp in audio video render disk kvm input tty clock utmp plugdev tss lp bluetooth; do
-    getent group "$grp" &>/dev/null || groupadd -r "$grp"
-done
+echo "Configurazione gruppi core tramite sysusers.d..."
+mkdir -p /usr/lib/sysusers.d
+cat > /usr/lib/sysusers.d/core-groups.conf << EOF
+g audio     - -
+g video     - -
+g render    - -
+g disk      - -
+g kvm       - -
+g input     - -
+g tty       - -
+g clock     - -
+g utmp      - -
+g plugdev   - -
+g lp        - -
+g bluetooth - -
+EOF
 
 # Crea l'utente di sistema tss se mancante (richiesto da tpm2/tmpfiles)
 getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
@@ -63,7 +75,7 @@ curl --output-dir "/etc/yum.repos.d/" \
 dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
 
 ## ==========================================
-## CONFIGURAZIONE SERVIZI DI SISTEMA 
+## CONFIGURAZIONE SERVIZI E FIX HARDWARE
 ## ==========================================
 systemctl enable power-profiles-daemon.service
 systemctl enable bluetooth.service
@@ -80,17 +92,39 @@ AutoEnable=true
 EOF
 fi
 
-## FIX POLKIT: Permessi Bluetooth Passwordless per la Shell DMS
+## FIX RFKILL: Sblocco hardware automatico via Udev (Risolve il blocco della Shell DMS)
+echo "Configurazione regola Udev per prevenire il soft-block del Bluetooth..."
+mkdir -p /usr/lib/udev/rules.d
+cat > /usr/lib/udev/rules.d/99-bluetooth-rfkill.rules << 'EOF'
+SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", RUN+="/usr/sbin/rfkill unblock bluetooth"
+EOF
+
+## FIX POLKIT: Permessi Bluetooth Passwordless per il gruppo wheel
 echo "Configurazione regole Polkit per il Bluetooth in DMS..."
 mkdir -p /usr/share/polkit-1/rules.d
 cat > /usr/share/polkit-1/rules.d/99-bluetooth-dms.rules << 'EOF'
 polkit.addRule(function(action, subject) {
     if ((action.id == "org.freedesktop.login1.set-rfkill-state" ||
          action.id.indexOf("org.bluez.") === 0) &&
-        subject.isInGroup("bluetooth")) {
+        subject.isInGroup("wheel")) {
         return polkit.Result.YES;
     }
 });
+EOF
+
+## FIX D-BUS: Sblocca la comunicazione diretta tra la Shell e BlueZ per il gruppo wheel
+echo "Configurazione criteri D-Bus per il Bluetooth..."
+mkdir -p /usr/share/dbus-1/system.d
+cat > /usr/share/dbus-1/system.d/99-bluetooth-wheel.conf << 'EOF'
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <policy group="wheel">
+    <allow send_destination="org.bluez"/>
+    <allow send_interface="org.bluez.Adapter1"/>
+    <allow send_interface="org.bluez.Device1"/>
+  </policy>
+</busconfig>
 EOF
 
 ## FIX XBOX CONTROLLER: Disabilita ERTM per stabilità del modulo bluetooth
@@ -117,7 +151,7 @@ EOF
 chmod 0755 /etc/greetd
 chown -R root:root /etc/greetd
 
-## sysusers
+## sysusers greetd
 cat > /usr/lib/sysusers.d/greetd.conf << EOF
 g video 44 -
 g render 989 -
@@ -126,7 +160,7 @@ m greeter video
 m greeter render
 EOF
 
-## tmpfiles
+## tmpfiles greetd
 cat > /usr/lib/tmpfiles.d/dms-greeter.conf << EOF
 d /var/cache/dms-greeter 2770 greeter greeter - -
 Z /var/cache/dms-greeter 2770 greeter greeter - -
@@ -138,7 +172,7 @@ mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 
 ## -------------------------------------------------------
-## FIX AGGRESSIVO UNMUTE AUDIO AD OGNI LOGIN
+## FIX AGGRESSIVO UNMUTE AUDIO AD ODNI LOGIN
 ## -------------------------------------------------------
 mkdir -p /etc/profile.d
 cat > /etc/profile.d/unmute-audio.sh << 'EOF'
@@ -186,15 +220,13 @@ After=local-fs.target systemd-sysusers.service
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/bash -c '\
-  echo "Sblocco preventivo RFKill per il Bluetooth..."; \
-  /usr/sbin/rfkill unblock bluetooth || true; \
   echo "Allineamento gruppi hardware per gli utenti locali..."; \
   for home in /var/home/*/; do \
     [ -d "$home" ] || continue; \
     user=$(basename "$home"); \
     uid=$(id -u "$user" 2>/dev/null) || continue; \
     [ "$uid" -ge 1000 ] || continue; \
-    echo "Assegnazione gruppi audio, video e bluetooth a $user..."; \
+    echo "Assegnazione gruppi hardware a $user..."; \
     /usr/sbin/usermod -aG audio,video,render,input,kvm,lp,bluetooth "$user" || true; \
   done; \
   if [ ! -f /var/lib/skel-sync.done ]; then \
