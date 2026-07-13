@@ -79,6 +79,26 @@ else
 AutoEnable=true
 EOF
 fi
+
+## FIX POLKIT: Permessi Bluetooth Passwordless per la Shell DMS
+echo "Configurazione regole Polkit per il Bluetooth in DMS..."
+mkdir -p /usr/share/polkit-1/rules.d
+cat > /usr/share/polkit-1/rules.d/99-bluetooth-dms.rules << 'EOF'
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.login1.set-rfkill-state" ||
+         action.id.indexOf("org.bluez.") === 0) &&
+        subject.isInGroup("bluetooth")) {
+        return polkit.Result.YES;
+    }
+});
+EOF
+
+## FIX XBOX CONTROLLER: Disabilita ERTM per stabilità del modulo bluetooth
+echo "Disabilitazione ERTM per compatibilità controller Xbox..."
+mkdir -p /usr/lib/modprobe.d
+cat > /usr/lib/modprobe.d/xbox_bt.conf << EOF
+options bluetooth disable_ertm=1
+EOF
 ## ==========================================
 
 ## Verifica path reale dms-greeter
@@ -166,6 +186,8 @@ After=local-fs.target systemd-sysusers.service
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/bash -c '\
+  echo "Sblocco preventivo RFKill per il Bluetooth..."; \
+  /usr/sbin/rfkill unblock bluetooth || true; \
   echo "Allineamento gruppi hardware per gli utenti locali..."; \
   for home in /var/home/*/; do \
     [ -d "$home" ] || continue; \
