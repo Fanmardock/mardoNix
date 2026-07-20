@@ -46,7 +46,12 @@ dnf5.real -y install power-profiles-daemon --allowerasing
 dnf5.real -y install cosmic-store
 
 ## Driver Controller Xbox (xpadneo)
-dnf5.real -y install akmod-xpadneo
+echo "Installazione driver xpadneo con build kmod esplicita..."
+KERNEL_NVR=$(dnf5.real repoquery --installed --qf '%{version}-%{release}.%{arch}' kernel | tail -n1)
+dnf5.real -y install kernel-devel-matched akmod-xpadneo
+akmods --force --kernels "${KERNEL_NVR}"
+depmod -a "${KERNEL_NVR}"
+
 
 ## User apps
 dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
