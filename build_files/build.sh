@@ -47,10 +47,20 @@ dnf5.real -y install cosmic-store
 
 ## Driver Controller Xbox (xpadneo)
 echo "Installazione driver xpadneo con build kmod esplicita..."
-KERNEL_NVR=$(dnf5.real repoquery --installed --qf '%{version}-%{release}.%{arch}' kernel | tail -n1)
 dnf5.real -y install kernel-devel-matched akmod-xpadneo
+
+KERNEL_NVR=$(basename "$(find /usr/lib/modules -mindepth 1 -maxdepth 1 -type d | head -n1)")
+echo "Kernel target per akmods: ${KERNEL_NVR}"
+
+if [ -z "${KERNEL_NVR}" ]; then
+    echo "ERRORE: impossibile determinare la versione del kernel installato"
+    exit 1
+fi
+
 akmods --force --kernels "${KERNEL_NVR}"
 depmod -a "${KERNEL_NVR}"
+
+test -f "/usr/lib/modules/${KERNEL_NVR}/extra/xpadneo/hid-xpadneo.ko.xz" || { echo "ERRORE: modulo xpadneo non compilato per ${KERNEL_NVR}"; exit 1; }
 
 
 ## User apps
