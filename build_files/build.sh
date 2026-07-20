@@ -46,29 +46,8 @@ dnf5.real -y install power-profiles-daemon --allowerasing
 dnf5.real -y install cosmic-store
 
 ## Driver Controller Xbox (xpadneo)
-echo "=== Installazione driver xpadneo ==="
-KERNEL_NVR=$(basename "$(find /usr/lib/modules -mindepth 1 -maxdepth 1 -type d | head -n1)")
-echo "Kernel target: ${KERNEL_NVR}"
 
-if [ -z "${KERNEL_NVR}" ]; then
-    echo "ERRORE: impossibile determinare la versione del kernel installato"
-    exit 1
-fi
-
-dnf5.real -y install kernel-devel-${KERNEL_NVR} kernel-headers-${KERNEL_NVR} akmod-xpadneo
-
-akmods --force --kernels "${KERNEL_NVR}"
-depmod -a "${KERNEL_NVR}"
-
-test -f "/usr/lib/modules/${KERNEL_NVR}/extra/xpadneo/hid-xpadneo.ko.xz" || { echo "ERRORE: modulo xpadneo non compilato per ${KERNEL_NVR}"; exit 1; }
-
-## Sicurezza: verifica che non sia comparso un secondo kernel per errore
-KVER_COUNT=$(find /usr/lib/modules -mindepth 1 -maxdepth 1 -type d | wc -l)
-if [ "${KVER_COUNT}" -gt 1 ]; then
-    echo "ERRORE: trovate ${KVER_COUNT} directory kernel in /usr/lib/modules, atteso 1:"
-    find /usr/lib/modules -mindepth 1 -maxdepth 1 -type d
-    exit 1
-fi
+dnf5.real -y install akmod-xpadneo
 
 ## User apps
 dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
