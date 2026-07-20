@@ -252,6 +252,11 @@ systemctl enable flatpak-provisioning.service
 ## Enable podman socket
 systemctl enable podman.socket
 
+mkdir -p /etc/modprobe.d
+cat > /etc/modprobe.d/bluetooth-xbox-ertm.conf << EOF
+options bluetooth disable_ertm=1
+EOF
+
 ## Disable Origami tips
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
