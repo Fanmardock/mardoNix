@@ -1,26 +1,26 @@
-ARG BASE_IMAGE_TAG="${BASE_IMAGE_TAG:-latest}"
-ARG BASE_IMAGE_REPO="quay.io/rakuos/rakuos-cosmic"
-
+# Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
 COPY build_files /
 
-FROM ${BASE_IMAGE_REPO}:${BASE_IMAGE_TAG} AS builder
-ARG BASE_IMAGE_TAG
-ENV BASE_IMAGE_TAG=${BASE_IMAGE_TAG}
-ARG RAKUOS_STAGING="0"
-ENV RAKUOS_STAGING=${RAKUOS_STAGING}
+# Base Image
+FROM quay.io/rakuos/rakuos-cosmic:latest
+RUN sed -i 's/^ID=.*/ID=fedora/' /etc/os-release
 
-COPY system_files /
+### MODIFICATIONS
+COPY --from=ghcr.io/ublue-os/brew:latest /system_files /
+RUN --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /usr/bin/systemctl preset brew-setup.service && \
+    /usr/bin/systemctl preset brew-update.timer && \
+    /usr/bin/systemctl preset brew-upgrade.timer
 
-# Esecuzione dello script di build specifico per AMD
+# Esecuzione dello script specifico per AMD
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
-    /ctx/build-amd.sh && /ctx/post-build.sh && /ctx/post-build-overlay.sh
+    /ctx/build-amd.sh
 
-COPY system_files /
-
+### LINTING
 RUN bootc container lint
-
-LABEL containers.bootc=1
