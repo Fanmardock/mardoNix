@@ -1,1 +1,36 @@
 
+ARG BASE_IMAGE_TAG="${BASE_IMAGE_TAG:-latest}"
+ARG BASE_IMAGE_REPO="quay.io/rakuos/rakuos-cosmic"
+ARG CHUNKAH_CONFIG_STR
+
+FROM scratch AS ctx
+COPY build_files /
+
+FROM ${BASE_IMAGE_REPO}:${BASE_IMAGE_TAG} AS builder
+ARG BASE_IMAGE_TAG
+ENV BASE_IMAGE_TAG=${BASE_IMAGE_TAG}
+ARG RAKUOS_STAGING="0"
+ENV RAKUOS_STAGING=${RAKUOS_STAGING}
+COPY system_files /
+
+# Chiamata allo script specifico AMD
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache \
+    --mount=type=cache,dst=/var/log \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build-amd.sh && /ctx/post-build.sh && /ctx/post-build-overlay.sh
+
+COPY system_files /
+
+RUN bootc container lint
+
+FROM quay.io/coreos/chunkah AS chunkah
+ARG CHUNKAH_CONFIG_STR
+RUN --mount=from=builder,src=/,target=/chunkah,ro \
+    --mount=type=bind,target=/run/src,rw \
+        chunkah build --prune /sysroot/ --max-layers 128 --compressed --threads 16 \
+          --label ostree.commit- --label ostree.final-diffid- \
+          > /run/src/out.ociarchive
+
+FROM oci-archive:out.ociarchive
+LABEL containers.bootc=1
