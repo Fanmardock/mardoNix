@@ -45,21 +45,16 @@ EOF
 getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
 
 ## ==========================================
-## DRIVER HARDWARE AMD & MESA (RYZEN + RADEON)
+## UTILITY AMD & GRAPHICS (SENZA SOVRASCRIVERE MESA BASE)
 ## ==========================================
-echo "Installazione Firmware e Driver AMD (Zen 2 + RDNA 3)..."
+echo "Installazione utility di diagnosi e firmware hardware..."
 dnf5.real -y install \
-    amd-ucode \
-    linux-firmware \
-    mesa-dri-drivers \
-    mesa-vulkan-drivers \
-    mesa-vulkan-drivers.i686 \
-    vulkan-loader \
+    microcode_ctl \
     vulkan-tools \
     clinfo \
     radeontop \
-    mesa-va-drivers-freeworld \
-    libva-utils
+    libva-utils \
+    --skip-unavailable || true
 
 ## ==========================================
 ## RESOLUTION CONFLITTO ENERGY MANAGEMENT
