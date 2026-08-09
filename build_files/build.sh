@@ -9,22 +9,18 @@ sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 ## ==========================================
 ## REPOSITORY ADDIZIONALI
 ## ==========================================
-# RPM Fusion (Free e NonFree per driver hardware e codec)
 dnf5.real -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm \
                     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
 
-## Repository DMS / Dank Linux Shell
 curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-${FEDORA_VERSION}/avengemedia-dms-fedora-${FEDORA_VERSION}.repo"
 
-## Repository Nautilus Open Any Terminal
 curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
   https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
 
 ## ==========================================
 ## CONFIGURAZIONE GRUPPI CORE (SYSUSERS)
 ## ==========================================
-echo "Configurazione gruppi core tramite sysusers.d..."
 mkdir -p /usr/lib/sysusers.d
 cat > /usr/lib/sysusers.d/core-groups.conf << EOF
 g audio     - -
@@ -41,31 +37,16 @@ g lp        - -
 g bluetooth - -
 EOF
 
-# Crea l'utente di sistema tss se mancante (richiesto da tpm2/tmpfiles)
 getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
-
-## ==========================================
-## UTILITY AMD & GRAPHICS (SENZA SOVRASCRIVERE MESA BASE)
-## ==========================================
-echo "Installazione utility di diagnosi e firmware hardware..."
-dnf5.real -y install \
-    microcode_ctl \
-    vulkan-tools \
-    clinfo \
-    radeontop \
-    libva-utils \
-    --skip-unavailable || true
 
 ## ==========================================
 ## RESOLUTION CONFLITTO ENERGY MANAGEMENT
 ## ==========================================
-# Rimuove tuned-ppd preinstallato prima di installare power-profiles-daemon
 dnf5.real -y remove tuned-ppd || true
 
 ## ==========================================
 ## STACK RAKUOS / NIRI / COMPONENTI DI SISTEMA
 ## ==========================================
-echo "Installazione stack Niri e pacchetti RakuOS..."
 dnf5.real -y install \
     niri \
     xwayland-satellite \
@@ -92,9 +73,12 @@ dnf5.real -y install \
     qt6ct-kde \
     libnotify \
     power-profiles-daemon \
+    libva-utils \
+    clinfo \
+    vulkan-tools \
     --allowerasing
 
-# System & User apps
+# Apps
 dnf5.real -y install \
     libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
@@ -113,10 +97,9 @@ dnf5.real -y install \
 
 dnf5.real -y install nautilus-open-any-terminal
 
-## Rimozione componenti non necessari/in conflitto
 dnf5.real -y remove waybar swaylock alacritty fuzzel cosmic-comp cosmic-initial-setup cosmic-settings || true
 
-## Gsettings Override per Nautilus Terminal
+## Gsettings Override
 mkdir -p /usr/share/glib-2.0/schemas/
 cat > /usr/share/glib-2.0/schemas/99_nautilus-open-any-terminal.gschema.override << EOF
 [com.github.stunkymonkey.nautilus-open-any-terminal]
@@ -127,18 +110,14 @@ glib-compile-schemas /usr/share/glib-2.0/schemas
 ## ==========================================
 ## REGOLAZIONI DI SICUREZZA, PAM E SERVIZI
 ## ==========================================
-
-# Sblocco Keyring automatico al login tramite Greetd (Da RakuOS)
 if [ -f /etc/pam.d/greetd ]; then
     sed -i -E 's/^-([a-z]+[[:space:]]+.*pam_gnome_keyring\.so)/\1/' /etc/pam.d/greetd
 fi
 
-# Abilitazione servizi di sistema
 systemctl enable power-profiles-daemon.service
 systemctl enable bluetooth.service
 systemctl enable podman.socket
 
-# Regole Udev e Polkit per Bluetooth / DMS
 mkdir -p /usr/lib/udev/rules.d
 cat > /usr/lib/udev/rules.d/99-bluetooth-rfkill.rules << 'EOF'
 SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", RUN+="/usr/sbin/rfkill unblock bluetooth"
@@ -155,7 +134,7 @@ polkit.addRule(function(action, subject) {
 });
 EOF
 
-## Configurazione Display Manager (Greetd + Niri)
+## Configurazione Greetd
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
 
 mkdir -p /etc/greetd/
@@ -170,7 +149,6 @@ EOF
 chmod 0755 /etc/greetd
 chown -R root:root /etc/greetd
 
-## Sysusers e Tmpfiles per Greetd
 cat > /usr/lib/sysusers.d/greetd.conf << EOF
 g video 44 -
 g render 989 -
@@ -190,10 +168,8 @@ mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 
 ## ==========================================
-## ARCHITETTURA USER SETUP & UTILITY (GEMME RAKUOS)
+## USER SETUP & UTILITY (RAKUOS)
 ## ==========================================
-
-# 1. Utility RakuOS Shell Manager per gestione/ripristino DMS
 cat > /usr/bin/rakuos-niri-shell << 'EOF'
 #!/bin/bash
 if [ "$EUID" -eq 0 ]; then
@@ -227,7 +203,6 @@ esac
 EOF
 chmod +x /usr/bin/rakuos-niri-shell
 
-# 2. Servizio User Systemd per Sync Dotfiles sicuro (Stile RakuOS)
 mkdir -p /usr/lib/systemd/user/
 cat > /usr/lib/systemd/user/dotfiles-setup.service << 'UNIT'
 [Unit]
@@ -248,11 +223,10 @@ ExecStart=/usr/bin/bash -c '\
 WantedBy=graphical-session.target
 UNIT
 
-# Abilita il servizio a livello globale per tutti gli utenti
 systemctl enable --global dotfiles-setup.service
 systemctl enable --global dms.service
 
-## Fix Unmute Audio al Boot
+## Audio Unmute
 mkdir -p /etc/profile.d
 cat > /etc/profile.d/unmute-audio.sh << 'EOF'
 if command -v amixer &> /dev/null; then
@@ -265,13 +239,12 @@ fi
 EOF
 chmod +x /etc/profile.d/unmute-audio.sh
 
-## Pre-popolamento configurazione Niri in /etc/skel
 mkdir -p /etc/skel/.config/niri/
 if [ -f /ctx/dot_config/niri/config.kdl ]; then
     cp -f /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/config.kdl
 fi
 
-## Provisioning Flatpak (Prima installazione)
+## Provisioning Flatpak
 cat > /usr/lib/systemd/system/flatpak-provisioning.service << 'UNIT'
 [Unit]
 Description=Install system Flatpaks on first boot
