@@ -9,9 +9,17 @@ sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 ## ==========================================
 ## REPOSITORY ADDIZIONALI
 ## ==========================================
-# RPM Fusion (Necessari per i driver hardware come xpadneo)
+# RPM Fusion (Free e NonFree)
 dnf5.real -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm \
                     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
+
+## Repository DMS / Dank Linux Shell
+curl --output-dir "/etc/yum.repos.d/" \
+  --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-${FEDORA_VERSION}/avengemedia-dms-fedora-${FEDORA_VERSION}.repo"
+
+## Repository Nautilus Open Any Terminal
+curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
+  https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
 
 ## ==========================================
 ## CONFIGURAZIONE GRUPPI CORE (SYSUSERS)
@@ -36,29 +44,59 @@ EOF
 # Crea l'utente di sistema tss se mancante (richiesto da tpm2/tmpfiles)
 getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
 
-## System apps
-dnf5.real -y install libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
-    iotop sysstat lxqt-openssh-askpass lxpolkit parallel
+## ==========================================
+## INSTALLAZIONE PACCHETTI E COMPONENTI NIRI
+## ==========================================
 
-dnf5.real -y install power-profiles-daemon --allowerasing
+# 1. Core Niri, DMS & Componenti di integrazione RakuOS
+dnf5.real -y install \
+    niri \
+    xwayland-satellite \
+    dms \
+    dms-greeter \
+    quickshell \
+    greetd \
+    xdg-desktop-portal \
+    xdg-desktop-portal-gnome \
+    xdg-desktop-portal-gtk \
+    xdg-user-dirs-gtk \
+    wl-clipboard \
+    wtype \
+    wl-mirror \
+    gnome-keyring \
+    gnome-keyring-pam \
+    fprintd-pam \
+    pipewire \
+    wireplumber \
+    pavucontrol \
+    blueman \
+    ddcutil \
+    adw-gtk3-theme \
+    qt6ct-kde \
+    libnotify \
+    --allowerasing
 
-## Software Center (COSMIC Store)
-dnf5.real -y install cosmic-store
-
-## Driver Controller Xbox (xpadneo)
-
-dnf5.real -y install akmod-xpadneo
-
-## User apps
-dnf5.real -y install nautilus kitty mpv rfkill gvfs blueman
-
-## Nautilus open any terminal extension
-curl -Lo /etc/yum.repos.d/nautilus-open-any-terminal.repo \
-  https://copr.fedorainfracloud.org/coprs/monkeygold/nautilus-open-any-terminal/repo/fedora-${FEDORA_VERSION}/monkeygold-nautilus-open-any-terminal-fedora-${FEDORA_VERSION}.repo
+# 2. System & User apps
+dnf5.real -y install \
+    libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
+    iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
+    power-profiles-daemon \
+    cosmic-store \
+    akmod-xpadneo \
+    nautilus \
+    kitty \
+    mpv \
+    rfkill \
+    gvfs \
+    gvfs-mtp \
+    gvfs-nfs \
+    file-roller \
+    gnome-calculator \
+    gnome-disk-utility
 
 dnf5.real -y install nautilus-open-any-terminal
 
-## Gsettings Override
+## Gsettings Override per Nautilus Terminal
 mkdir -p /usr/share/glib-2.0/schemas/
 cat > /usr/share/glib-2.0/schemas/99_nautilus-open-any-terminal.gschema.override << EOF
 [com.github.stunkymonkey.nautilus-open-any-terminal]
@@ -66,29 +104,28 @@ terminal='kitty'
 EOF
 glib-compile-schemas /usr/share/glib-2.0/schemas
 
-## Install Niri
-dnf5.real -y install niri
-
-## Install Dank Linux shell (DMS)
-curl --output-dir "/etc/yum.repos.d/" \
-  --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-${FEDORA_VERSION}/avengemedia-dms-fedora-${FEDORA_VERSION}.repo"
-
-dnf5.real -y install quickshell dms greetd dms-greeter --allowerasing
-
 ## ==========================================
-## CONFIGURAZIONE SERVIZI E ABILITAZIONE HARDWARE
+## FIX E CONFIGURAZIONI DI SISTEMA
 ## ==========================================
+
+# Sblocco Keyring automatico al login tramite Greetd (Da RakuOS)
+if [ -f /etc/pam.d/greetd ]; then
+    sed -i -E 's/^-([a-z]+[[:space:]]+.*pam_gnome_keyring\.so)/\1/' /etc/pam.d/greetd
+fi
+
+# Configurazione servizi hardware
 systemctl enable power-profiles-daemon.service
 systemctl enable bluetooth.service
+systemctl enable podman.socket
 
-# 1. FIX KERNEL (UDEV): Forza lo sblocco radio al boot per avere il Bluetooth attivo all'avvio
+# Regola Udev per Bluetooth attivo al boot
 echo "Configurazione regola Udev per il Bluetooth attivo al boot..."
 mkdir -p /usr/lib/udev/rules.d
 cat > /usr/lib/udev/rules.d/99-bluetooth-rfkill.rules << 'EOF'
 SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", RUN+="/usr/sbin/rfkill unblock bluetooth"
 EOF
 
-# 2. FIX INTERFACCIA (POLKIT): Consente alla Shell DMS di spegnere/accendere il Bluetooth senza password
+# Regola Polkit per DMS Bluetooth
 echo "Configurazione regole Polkit per il gruppo wheel..."
 mkdir -p /usr/share/polkit-1/rules.d
 cat > /usr/share/polkit-1/rules.d/99-bluetooth-dms.rules << 'EOF'
@@ -100,12 +137,10 @@ polkit.addRule(function(action, subject) {
     }
 });
 EOF
-## ==========================================
 
-## Verifica path reale dms-greeter
+## Configurazione Display Manager (Greetd)
 DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
 
-## Configura greetd
 mkdir -p /etc/greetd/
 cat > /etc/greetd/config.toml << EOF
 [terminal]
@@ -128,6 +163,7 @@ m greeter render
 EOF
 
 ## tmpfiles greetd
+mkdir -p /usr/lib/tmpfiles.d
 cat > /usr/lib/tmpfiles.d/dms-greeter.conf << EOF
 d /var/cache/dms-greeter 2770 greeter greeter - -
 Z /var/cache/dms-greeter 2770 greeter greeter - -
@@ -139,7 +175,7 @@ mkdir -p /etc/systemd/system/display-manager.service.wants
 ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
 
 ## -------------------------------------------------------
-## FIX AGGRESSIVO UNMUTE AUDIO AD OGNI LOGIN
+## FIX UNMUTE AUDIO AD OGNI LOGIN
 ## -------------------------------------------------------
 mkdir -p /etc/profile.d
 cat > /etc/profile.d/unmute-audio.sh << 'EOF'
@@ -176,7 +212,7 @@ else
 fi
 
 ## -------------------------------------------------------
-## SERVIZIO REFRESH UTENTI E LIVELLO PERMESSI (Ad ogni boot)
+## SERVIZIO REFRESH UTENTI E LIVELLO PERMESSI
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/skel-sync.service << 'UNIT'
 [Unit]
@@ -220,7 +256,7 @@ UNIT
 systemctl enable skel-sync.service
 
 ## -------------------------------------------------------
-## SERVIZIO FLATPAK
+## SERVIZIO FLATPAK PROVISIONING
 ## -------------------------------------------------------
 cat > /usr/lib/systemd/system/flatpak-provisioning.service << 'UNIT'
 [Unit]
@@ -249,9 +285,6 @@ UNIT
 
 systemctl enable flatpak-provisioning.service
 
-## Enable podman socket
-systemctl enable podman.socket
-
 mkdir -p /etc/modprobe.d
 cat > /etc/modprobe.d/bluetooth-xbox-ertm.conf << EOF
 options bluetooth disable_ertm=1
@@ -261,8 +294,8 @@ EOF
 mv /etc/profile.d/origami-aliases.sh \
    /etc/profile.d/origami-aliases.sh.bak 2>/dev/null || true
 
-## Remove COSMIC shell e waybar (MANTENIAMO cosmic-settings-daemon per Noctua/Store)
-dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings waybar || true
+## Remove redundant shells e composants
+dnf5.real -y remove cosmic-comp cosmic-initial-setup cosmic-settings waybar swaylock alacritty fuzzel || true
 
 ## CLEAN UP
 dnf5.real -y clean all
