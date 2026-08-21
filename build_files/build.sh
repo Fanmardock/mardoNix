@@ -4,12 +4,10 @@ set -ouex pipefail
 ## ==========================================
 ## 0. CONFIGURAZIONE OPTIMIZATION ISA (x86-64-v3)
 ## ==========================================
-# Imposta i flag di compilazione per l'architettura x86-64-v3 (AVX, AVX2, BMI2, FMA)
 export CFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=generic"
 export CXXFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=generic"
 export LDFLAGS="-Wl,-O1,--sort-common"
 
-# Inietta la macro RPM per la build di eventuali pacchetti locali su x86-64-v3
 mkdir -p /etc/rpm
 cat > /etc/rpm/macros.override << 'EOF'
 %_target_cpu x86_64
@@ -22,10 +20,14 @@ FEDORA_VERSION=$(rpm -E %fedora)
 sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
 
 ## ==========================================
-## REPOSITORY ADDIZIONALI
+## REPOSITORY ADDIZIONALI & VS CODE
 ## ==========================================
 dnf5.real -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm \
                     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
+
+# Repository MS per Visual Studio Code
+rpm --import https://packages.microsoft.com/keys/microsoft.asc
+echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo
 
 curl --output-dir "/etc/yum.repos.d/" \
   --remote-name "https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-${FEDORA_VERSION}/avengemedia-dms-fedora-${FEDORA_VERSION}.repo"
@@ -93,8 +95,9 @@ dnf5.real -y install \
     vulkan-tools \
     --allowerasing
 
-# Apps
+# Apps & Editor (Incluso VS Code)
 dnf5.real -y install \
+    code \
     libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
     cosmic-store \
@@ -112,6 +115,7 @@ dnf5.real -y install \
 
 dnf5.real -y install nautilus-open-any-terminal
 
+# Rimozione componenti ridondanti (fuzzel viene rimosso perché sostituito da DMS)
 dnf5.real -y remove waybar swaylock alacritty fuzzel cosmic-comp cosmic-initial-setup cosmic-settings || true
 
 ## Gsettings Override
