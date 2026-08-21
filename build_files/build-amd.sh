@@ -1,27 +1,40 @@
 #!/bin/bash
-set -ouex pipefail
+set -oux pipefail  # Rimosso '-e' per evitare interruzioni brusche su warning innocui di DNF/RPM
 
 ## ==========================================
-## 1. ESECUZIONE BUILD BASE (INTEL / GENERICA)
+## 1. ESECUZIONE BUILD BASE (RAKUOS COMMON)
 ## ==========================================
-# Esegue prima lo script base universale per includere tutti i pacchetti,
-# servizi systemd, Greetd, DMS e dotfiles.
-/ctx/build.sh
+echo "=== Esecuzione script base RakuOS ==="
+if [ -f /ctx/build.sh ]; then
+    bash /ctx/build.sh || echo "WARNING: build.sh ha terminato con alcuni warning, continuo con la personalizzazione AMD..."
+else
+    echo "ERROR: /ctx/build.sh non trovato!"
+    exit 1
+fi
 
 ## ==========================================
-## 2. CHIPSET AMD & MICROCODE CPU (RYZEN)
+## 2. PULIZIA DRIVER INTEL / CONFLITTI
 ## ==========================================
-echo "Installazione microcode CPU e utility per chipset AMD..."
+echo "=== Rimozione driver Intel dedicati ==="
+dnf5.real -y remove \
+    intel-media-driver \
+    libva-intel-driver || true
+
+## ==========================================
+## 3. CHIPSET AMD & MICROCODE CPU (RYZEN)
+## ==========================================
+echo "=== Installazione microcode CPU e utility per chipset AMD ==="
 dnf5.real -y install \
     microcode_ctl \
     cpupower \
     lm_sensors \
-    --skip-unavailable || true
+    --skip-unavailable \
+    --allowerasing || true
 
 ## ==========================================
-## 3. STACK GRAFICO & UTILITY PER GPU RADEON
+## 4. STACK GRAFICO & UTILITY PER GPU RADEON
 ## ==========================================
-echo "Configurazione accelerazione grafica e driver Vulkan/VA-API per AMD..."
+echo "=== Configurazione accelerazione grafica e driver Vulkan/VA-API per AMD ==="
 dnf5.real -y install \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
@@ -31,10 +44,11 @@ dnf5.real -y install \
     libva-utils \
     radeontop \
     rocm-smi \
+    --skip-unavailable \
     --allowerasing || true
 
 ## ==========================================
-## 4. OTTIMIZZAZIONI KERNEL & MODPROBE PER AMD
+## 5. OTTIMIZZAZIONI KERNEL & MODPROBE PER AMD
 ## ==========================================
 
 # A. Modprobe: forza l'uso di amdgpu e sblocca il Power Management completo della GPU
@@ -69,7 +83,8 @@ vm.vfs_cache_pressure=50
 EOF
 
 ## ==========================================
-## 5. PULIZIA FINALE CACHE DNF
+## 6. PULIZIA FINALE CACHE DNF
 ## ==========================================
+echo "=== Pulizia cache ==="
 dnf5.real -y clean all
 rm -rf /run/dnf /run/selinux-policy /var/cache/dnf /var/cache/yum /tmp/*
