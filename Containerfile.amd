@@ -4,7 +4,13 @@ COPY build_files /
 
 # Base Image
 FROM quay.io/rakuos/rakuos-cosmic:latest
-RUN sed -i 's/^ID=.*/ID=fedora/' /etc/os-release
+
+### ISA LEVEL & OCI LABELS (x86-64-v3)
+LABEL os.isa_level="v3"
+LABEL org.opencontainers.image.base.isa="v3"
+
+RUN sed -i 's/^ID=.*/ID=fedora/' /etc/os-release && \
+    echo "ISA_LEVEL=v3" >> /etc/os-release
 
 ### MODIFICATIONS
 COPY --from=ghcr.io/ublue-os/brew:latest /system_files /
@@ -15,7 +21,6 @@ RUN --mount=type=cache,dst=/var/cache \
     /usr/bin/systemctl preset brew-update.timer && \
     /usr/bin/systemctl preset brew-upgrade.timer
 
-# Esecuzione dello script specifico per AMD
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
