@@ -1,6 +1,21 @@
 #!/bin/bash
 set -ouex pipefail
 
+## ==========================================
+## 0. CONFIGURAZIONE OPTIMIZATION ISA (x86-64-v3)
+## ==========================================
+# Imposta i flag di compilazione per l'architettura x86-64-v3 (AVX, AVX2, BMI2, FMA)
+export CFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=generic"
+export CXXFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=generic"
+export LDFLAGS="-Wl,-O1,--sort-common"
+
+# Inietta la macro RPM per la build di eventuali pacchetti locali su x86-64-v3
+mkdir -p /etc/rpm
+cat > /etc/rpm/macros.override << 'EOF'
+%_target_cpu x86_64
+%optflags -O2 -g -grecord-gcc-switches -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fstack-protector-strong --param=ssp-buffer-size=4 -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -march=x86-64-v3 -mtune=generic
+EOF
+
 FEDORA_VERSION=$(rpm -E %fedora)
 
 ## DNF5 Speedup
