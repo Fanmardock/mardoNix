@@ -59,9 +59,10 @@ EOF
 getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
 
 ## ==========================================
-## RESOLUTION CONFLITTO ENERGY MANAGEMENT
+## RESOLUTION CONFLITTI PACKAGE MANAGEMENT
 ## ==========================================
-rum remove tuned-ppd || true
+# Rimuove i pacchetti dell'immagine base che vanno in conflitto con power-profiles-daemon e qt6ct
+rum remove tuned-ppd qt6ct-kde || true
 
 ## ==========================================
 ## STACK RAKUOS / NIRI / COMPONENTI DI SISTEMA
@@ -90,7 +91,7 @@ rum install -y \
     blueman \
     ddcutil \
     adw-gtk3-theme \
-    qt6ct-kde \
+    qt6ct \
     libnotify \
     power-profiles-daemon \
     libva-utils \
