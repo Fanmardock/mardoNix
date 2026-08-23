@@ -16,14 +16,16 @@ EOF
 
 FEDORA_VERSION=$(rpm -E %fedora)
 
-## DNF5 Speedup
-sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
+## DNF Speedup
+if [ -f /etc/dnf/dnf.conf ]; then
+    sed -i '/^\[main\]/a max_parallel_downloads=10' /etc/dnf/dnf.conf
+fi
 
 ## ==========================================
 ## REPOSITORY ADDIZIONALI & VS CODE
 ## ==========================================
-dnf5.real -y install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm \
-                    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
+rum install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm \
+               https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm
 
 # Repository MS per Visual Studio Code
 rpm --import https://packages.microsoft.com/keys/microsoft.asc
@@ -59,16 +61,17 @@ getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/no
 ## ==========================================
 ## RESOLUTION CONFLITTO ENERGY MANAGEMENT
 ## ==========================================
-dnf5.real -y remove tuned-ppd || true
+rum remove tuned-ppd || true
 
 ## ==========================================
 ## STACK RAKUOS / NIRI / COMPONENTI DI SISTEMA
 ## ==========================================
-dnf5.real -y install \
+rum install -y \
     niri \
     xwayland-satellite \
     dms \
-    dms-greeter \
+    dankcalendar-git \
+    danksearch \
     quickshell \
     greetd \
     xdg-desktop-portal \
@@ -92,11 +95,10 @@ dnf5.real -y install \
     power-profiles-daemon \
     libva-utils \
     clinfo \
-    vulkan-tools \
-    --allowerasing
+    vulkan-tools
 
 # Apps & Editor (Incluso VS Code)
-dnf5.real -y install \
+rum install -y \
     code \
     libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
@@ -113,10 +115,10 @@ dnf5.real -y install \
     gnome-calculator \
     gnome-disk-utility
 
-dnf5.real -y install nautilus-open-any-terminal
+rum install -y nautilus-open-any-terminal
 
-# Rimozione componenti ridondanti (fuzzel viene rimosso perché sostituito da DMS)
-dnf5.real -y remove waybar swaylock alacritty fuzzel cosmic-comp cosmic-initial-setup cosmic-settings || true
+# Rimozione componenti ridondanti (fuzzel sostituito da DMS)
+rum remove waybar swaylock alacritty fuzzel cosmic-comp cosmic-initial-setup cosmic-settings || true
 
 ## Gsettings Override
 mkdir -p /usr/share/glib-2.0/schemas/
@@ -308,5 +310,4 @@ options bluetooth disable_ertm=1
 EOF
 
 ## CLEAN UP
-dnf5.real -y clean all
 rm -rf /run/dnf /run/selinux-policy /var/cache/dnf /var/cache/yum /tmp/*
