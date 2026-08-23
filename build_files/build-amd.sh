@@ -9,7 +9,7 @@ export CFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=znver3"
 export CXXFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=znver3"
 
 rum install -y \
-    amd-ucode \
+    linux-firmware \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
     mesa-va-drivers \
