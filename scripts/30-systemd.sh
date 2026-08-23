@@ -1,0 +1,58 @@
+#!/bin/bash
+set -ouex pipefail
+
+if [ -f /etc/pam.d/greetd ]; then
+    sed -i -E 's/^-([a-z]+[[:space:]]+.*pam_gnome_keyring\.so)/\1/' /etc/pam.d/greetd
+fi
+
+systemctl enable power-profiles-daemon.service
+systemctl enable bluetooth.service
+systemctl enable podman.socket
+
+mkdir -p /usr/lib/udev/rules.d
+cat > /usr/lib/udev/rules.d/99-bluetooth-rfkill.rules << 'EOF'
+SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", RUN+="/usr/sbin/rfkill unblock bluetooth"
+EOF
+
+mkdir -p /usr/share/polkit-1/rules.d
+cat > /usr/share/polkit-1/rules.d/99-bluetooth-dms.rules << 'EOF'
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.login1.set-rfkill-state" ||
+         action.id.indexOf("org.bluez.") === 0) &&
+        subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+    }
+});
+EOF
+
+# Greetd setup
+DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
+mkdir -p /etc/greetd/
+cat > /etc/greetd/config.toml << EOF
+[terminal]
+vt = "next"
+
+[default_session]
+user = "greeter"
+command = "${DMS_GREETER_BIN} --command niri"
+EOF
+chmod 0755 /etc/greetd
+chown -R root:root /etc/greetd
+
+cat > /usr/lib/sysusers.d/greetd.conf << EOF
+g video 44 -
+g render 989 -
+u greeter - "Greetd Greeter" - /usr/sbin/nologin
+m greeter video
+m greeter render
+EOF
+
+mkdir -p /usr/lib/tmpfiles.d
+cat > /usr/lib/tmpfiles.d/dms-greeter.conf << EOF
+d /var/cache/dms-greeter 2770 greeter greeter - -
+Z /var/cache/dms-greeter 2770 greeter greeter - -
+EOF
+
+systemctl enable --force greetd.service
+mkdir -p /etc/systemd/system/display-manager.service.wants
+ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
