@@ -5,8 +5,8 @@ if [ -f /ctx/build.sh ]; then
     bash /ctx/build.sh
 fi
 
-export CFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=znver3"
-export CXXFLAGS="-O2 -pipe -march=x86-64-v3 -mtune=znver3"
+export CFLAGS="-O2 -pipe -march=znver3 -mtune=znver3"
+export CXXFLAGS="-O2 -pipe -march=znver3 -mtune=znver3"
 
 rum install -y \
     linux-firmware \
