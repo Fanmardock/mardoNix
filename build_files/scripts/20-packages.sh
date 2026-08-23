@@ -45,7 +45,7 @@ rum install -y --allowerasing \
 ## ==========================================
 ## 3. APPLICAZIONI & UTILITY
 ## ==========================================
-rum install -y \
+rum install -y --allowerasing \
     code \
     libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
