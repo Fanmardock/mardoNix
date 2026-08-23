@@ -245,18 +245,33 @@ UNIT
 systemctl enable --global dotfiles-setup.service
 systemctl enable --global dms.service
 
-## Audio Unmute
+## Audio Unmute (ALSA + HDMI Digital Output)
 mkdir -p /etc/profile.d
 cat > /etc/profile.d/unmute-audio.sh << 'EOF'
 if command -v amixer &> /dev/null; then
     (
         sleep 3
         amixer -c 0 set Master unmute 70% &>/dev/null || true
+        amixer -c 0 set Speaker unmute 70% &>/dev/null || true
+        amixer -c 0 set Front unmute 70% &>/dev/null || true
         amixer set Master unmute 70% &>/dev/null || true
+        amixer set Speaker unmute 70% &>/dev/null || true
+        amixer -c 0 set IEC958 unmute 100% &>/dev/null || true
+        amixer -c 0 set "IEC958,0" unmute 100% &>/dev/null || true
+        amixer -c 1 set IEC958 unmute 100% &>/dev/null || true
+        amixer -c 1 set "IEC958,0" unmute 100% &>/dev/null || true
     ) &
 fi
 EOF
 chmod +x /etc/profile.d/unmute-audio.sh
+
+## Switch Automatico Uscita Audio HDMI / WirePlumber
+mkdir -p /etc/wireplumber/wireplumber.conf.d
+cat > /etc/wireplumber/wireplumber.conf.d/50-hdmi-switch.conf << 'EOF'
+wireplumber.settings = {
+    "linking.follow-routes": true
+}
+EOF
 
 mkdir -p /etc/skel/.config/niri/
 if [ -f /ctx/dot_config/niri/config.kdl ]; then
