@@ -8,7 +8,7 @@ fi
 export CFLAGS="-O2 -pipe -march=znver3 -mtune=znver3"
 export CXXFLAGS="-O2 -pipe -march=znver3 -mtune=znver3"
 
-rum install -y \
+rum install -y --allowerasing \
     linux-firmware \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
