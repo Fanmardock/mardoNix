@@ -59,15 +59,10 @@ EOF
 getent passwd tss &>/dev/null || useradd -r -g tss -d /var/empty -s /usr/sbin/nologin -c "TPM2 TSS User" tss
 
 ## ==========================================
-## RESOLUTION CONFLITTI PACKAGE MANAGEMENT
-## ==========================================
-# Rimuove i pacchetti dell'immagine base che vanno in conflitto con power-profiles-daemon e qt6ct
-rum remove tuned-ppd qt6ct-kde || true
-
-## ==========================================
 ## STACK RAKUOS / NIRI / COMPONENTI DI SISTEMA
 ## ==========================================
-rum install -y \
+# Si usa --allowerasing per sostituire automaticamente tuned-ppd con power-profiles-daemon
+rum install -y --allowerasing \
     niri \
     xwayland-satellite \
     dms \
@@ -248,31 +243,31 @@ UNIT
 systemctl enable --global dotfiles-setup.service
 systemctl enable --global dms.service
 
-## Audio Unmute (ALSA + HDMI Digital Output)
-mkdir -p /etc/profile.d
-cat > /etc/profile.d/unmute-audio.sh << 'EOF'
-if command -v amixer &> /dev/null; then
-    (
-        sleep 3
-        amixer -c 0 set Master unmute 70% &>/dev/null || true
-        amixer -c 0 set Speaker unmute 70% &>/dev/null || true
-        amixer -c 0 set Front unmute 70% &>/dev/null || true
-        amixer set Master unmute 70% &>/dev/null || true
-        amixer set Speaker unmute 70% &>/dev/null || true
-        amixer -c 0 set IEC958 unmute 100% &>/dev/null || true
-        amixer -c 0 set "IEC958,0" unmute 100% &>/dev/null || true
-        amixer -c 1 set IEC958 unmute 100% &>/dev/null || true
-        amixer -c 1 set "IEC958,0" unmute 100% &>/dev/null || true
-    ) &
-fi
-EOF
-chmod +x /etc/profile.d/unmute-audio.sh
-
-## Switch Automatico Uscita Audio HDMI / WirePlumber
+## ==========================================
+## CONFIGURAZIONE AUDIO WIREPLUMBER (HDMI FIX)
+## ==========================================
+# Forzatura del profilo HiFi per chipset Intel SOF (Raptor Lake) e abilitazione auto-routing
 mkdir -p /etc/wireplumber/wireplumber.conf.d
-cat > /etc/wireplumber/wireplumber.conf.d/50-hdmi-switch.conf << 'EOF'
+
+cat > /etc/wireplumber/wireplumber.conf.d/50-force-hifi-hdmi.conf << 'EOF'
+monitor.alsa.rules = [
+  {
+    matches = [
+      {
+        device.name = "~alsa_card.pci-0000_00_1f.3.*"
+      }
+    ]
+    actions = {
+      update-props = {
+        device.profile = "HiFi (HDMI1, HDMI2, HDMI3, Mic1, Mic2, Speaker)"
+      }
+    }
+  }
+]
+
 wireplumber.settings = {
-    "linking.follow-routes": true
+  "linking.follow-routes": true,
+  "device.routes.default-sink-volume": 0.8
 }
 EOF
 
