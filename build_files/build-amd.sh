@@ -12,8 +12,8 @@ rum install -y --allowerasing \
     linux-firmware \
     mesa-dri-drivers \
     mesa-vulkan-drivers \
-    mesa-va-drivers \
-    mesa-vdpau-drivers \
+    mesa-va-drivers-freeworld\
+    mesa-vdpau-drivers-freeworld \
     rocm-opencl \
     rocm-smi \
     radeontop
