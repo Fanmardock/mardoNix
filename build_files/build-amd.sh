@@ -10,8 +10,6 @@ export CXXFLAGS="-O2 -pipe -march=znver3 -mtune=znver3"
 
 rum install -y --allowerasing \
     linux-firmware \
-    mesa-dri-drivers \
-    mesa-vulkan-drivers \
     mesa-va-drivers-freeworld\
     mesa-vdpau-drivers-freeworld \
     rocm-opencl \
