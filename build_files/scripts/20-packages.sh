@@ -15,6 +15,7 @@ rum install -y --allowerasing \
     niri \
     xwayland-satellite \
     dms \
+    dms-greeter \
     dankcalendar-git \
     danksearch \
     quickshell \
