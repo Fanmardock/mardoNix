@@ -26,7 +26,6 @@ polkit.addRule(function(action, subject) {
 EOF
 
 # Greetd setup
-DMS_GREETER_BIN=$(which dms-greeter 2>/dev/null || echo "/usr/bin/dms-greeter")
 mkdir -p /etc/greetd/
 cat > /etc/greetd/config.toml << EOF
 [terminal]
@@ -34,7 +33,7 @@ vt = "next"
 
 [default_session]
 user = "greeter"
-command = "${DMS_GREETER_BIN} --command niri"
+command = "dms greeter --command niri"
 EOF
 chmod 0755 /etc/greetd
 chown -R root:root /etc/greetd
@@ -47,12 +46,14 @@ m greeter video
 m greeter render
 EOF
 
+# Permessi cache per DMS Greeter
+mkdir -p /var/cache/dms
 mkdir -p /usr/lib/tmpfiles.d
-cat > /usr/lib/tmpfiles.d/dms-greeter.conf << EOF
-d /var/cache/dms-greeter 2770 greeter greeter - -
-Z /var/cache/dms-greeter 2770 greeter greeter - -
+
+cat > /usr/lib/tmpfiles.d/dms.conf << EOF
+d /var/cache/dms 0770 greeter greeter - -
+Z /var/cache/dms 0770 greeter greeter - -
 EOF
 
+# Abilitazione Display Manager (greetd)
 systemctl enable --force greetd.service
-mkdir -p /etc/systemd/system/display-manager.service.wants
-ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/display-manager.service
