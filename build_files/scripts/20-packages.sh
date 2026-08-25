@@ -66,4 +66,5 @@ rum install -y --allowerasing \
 ## ==========================================
 ## 4. RIMOZIONE COMPONENTI RIDONDANTI
 ## ==========================================
-rum remove waybar swaylock alacritty fuzzel cosmic-comp cosmic-initial-setup cosmic-settings || true
+# Rimozione di componenti COSMIC e launcher inutilizzati
+rum remove waybar swaylock alacritty cosmic-comp cosmic-initial-setup cosmic-settings || true
