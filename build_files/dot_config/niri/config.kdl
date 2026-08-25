@@ -385,7 +385,8 @@ binds {
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     //Mod+T hotkey-overlay-title="Open a Terminal: alacritty" { spawn "alacritty"; }
     Mod+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
-    Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    //Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    Mod+D { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
 
     Mod+B hotkey-overlay-title="Run an Application: chrome" { spawn "chrome"; }
     Mod+N hotkey-overlay-title="Run an Application: nautilus" { spawn "nautilus"; }
