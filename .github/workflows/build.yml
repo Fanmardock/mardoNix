@@ -105,6 +105,8 @@ jobs:
           oci: false
           extra-args: |
             --cap-add=SYS_ADMIN
+            --retry=5
+            --retry-delay=5s
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
