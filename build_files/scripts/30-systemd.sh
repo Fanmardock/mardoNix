@@ -41,7 +41,8 @@ if [ -f /etc/pam.d/greetd ]; then
     sed -i -E 's/^-([a-z]+[[:space:]]+.*pam_gnome_keyring\.so)/\1/' /etc/pam.d/greetd
 fi
 
-# 5. Abilitazione servizi systemd
-systemctl enable greetd.service
+# 5. Abilitazione servizi systemd (con override forzato di display-manager.service)
+rm -f /etc/systemd/system/display-manager.service
+systemctl enable --force greetd.service
 
 echo "=== Configurazione systemd completata ==="
