@@ -64,3 +64,10 @@ rum install -y --allowerasing \
     gnome-disk-utility \
     nautilus-open-any-terminal
 
+## ==========================================
+## 4. PULIZIA PACCHETTI IN ECESSO (POST-INSTALL)
+## ==========================================
+# Rimozione di eventuali pacchetti residui/ridondanti che potrebbero essere
+# trascinati come dipendenze (no-op se non presenti, || true di sicurezza)
+rum remove waybar swaylock alacritty cosmic-comp cosmic-initial-setup cosmic-settings || true
+
