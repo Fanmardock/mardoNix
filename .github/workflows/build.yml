@@ -14,6 +14,7 @@ on:
   workflow_dispatch:
 
 env:
+  NODE_VERSION: '24' # forza tutte le actions a girare su runtime Node 24 (i runner di default usano Node 20)
   IMAGE_DESC: "My Customized RakuOS Image"
   IMAGE_KEYWORDS: "bootc,ublue,universal-blue,rakuos"
   IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
