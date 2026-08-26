@@ -89,9 +89,7 @@ glib-compile-schemas /usr/share/glib-2.0/schemas
 
 # Copia Niri Config di Default
 mkdir -p /etc/skel/.config/niri/
-if [ -f /ctx/dot_config/niri/config.kdl ]; then
-    cp -f /ctx/dot_config/niri/config.kdl /etc/skel/.config/niri/config.kdl
-fi
+cp -rf /ctx/dot_config/niri/. /etc/skel/.config/niri/
 
 # Provisioning Flatpak
 cat > /usr/lib/systemd/system/flatpak-provisioning.service << 'UNIT'

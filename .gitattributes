@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 * text=auto eol=lf
 *.png binary
 *.jpg binary
@@ -11,3 +12,10 @@
 Containerfile text eol=lf
 Justfile text eol=lf
 .gitattributes text eol=lf
+=======
+*.sh text eol=lf
+*.kdl text eol=lf
+*.conf text eol=lf
+Containerfile text eol=lf
+Justfile text eol=lf
+>>>>>>> 51443315a7fc0809171c087beb2dfc0463908c96

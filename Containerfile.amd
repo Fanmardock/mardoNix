@@ -1,9 +1,14 @@
+# Global build arg - available to all FROM lines for image tag resolution.
+# Must NOT have ENV here; ENV is a layer instruction and cannot precede FROM.
+ARG BASE_IMAGE_TAG="${BASE_IMAGE_TAG:-latest}"
+ARG BASE_IMAGE_REPO="quay.io/rakuos/rakuos-base"
+
 # Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
 COPY build_files /
 
-# Base Image
-FROM quay.io/rakuos/rakuos-cosmic:latest
+# Base Image (stessa base usata da rakuos-niri)
+FROM ${BASE_IMAGE_REPO}:${BASE_IMAGE_TAG}
 
 ### ISA LEVEL & OCI LABELS (x86-64-v3)
 LABEL os.isa_level="v3"

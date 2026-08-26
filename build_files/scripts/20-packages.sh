@@ -15,6 +15,7 @@ rum install -y --allowerasing \
     niri \
     xwayland-satellite \
     dms \
+    dms-greeter \
     dankcalendar-git \
     danksearch \
     quickshell \
@@ -49,7 +50,7 @@ rum install -y --allowerasing \
     code \
     libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
-    cosmic-store \
+    rakuos-software-gtk \
     akmod-xpadneo \
     nautilus \
     kitty \
@@ -64,6 +65,9 @@ rum install -y --allowerasing \
     nautilus-open-any-terminal
 
 ## ==========================================
-## 4. RIMOZIONE COMPONENTI RIDONDANTI
+## 4. PULIZIA PACCHETTI IN ECESSO (POST-INSTALL)
 ## ==========================================
-rum remove waybar swaylock alacritty fuzzel cosmic-comp cosmic-initial-setup cosmic-settings || true
+# Rimozione di eventuali pacchetti residui/ridondanti che potrebbero essere
+# trascinati come dipendenze (no-op se non presenti, || true di sicurezza)
+rum remove waybar swaylock alacritty cosmic-comp cosmic-initial-setup cosmic-settings || true
+
