@@ -50,7 +50,7 @@ rum install -y --allowerasing \
     code \
     libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
-    cosmic-store \
+    rakuos-software-gtk \
     akmod-xpadneo \
     nautilus \
     kitty \
@@ -64,8 +64,3 @@ rum install -y --allowerasing \
     gnome-disk-utility \
     nautilus-open-any-terminal
 
-## ==========================================
-## 4. RIMOZIONE COMPONENTI RIDONDANTI
-## ==========================================
-# Rimozione di componenti COSMIC e launcher inutilizzati
-rum remove waybar swaylock alacritty cosmic-comp cosmic-initial-setup cosmic-settings || true
