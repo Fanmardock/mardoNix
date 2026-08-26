@@ -95,10 +95,11 @@ jobs:
 
       - name: Build Image
         id: build_image
-        uses: redhat-actions/buildah-build@v2
+        uses: redhat-actions/buildah-build@v3
         with:
           containerfiles: |
             ${{ matrix.containerfile }}
+          squash: false  # in v3 il default è true; esplicitiamo false per mantenere il comportamento v2
           image: ${{ env.IMAGE_NAME }}
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
