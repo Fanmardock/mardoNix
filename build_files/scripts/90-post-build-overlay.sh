@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -ouex pipefail
 
 ## ==========================================
 ## POST-BUILD: seed overlay RakuOS per il first-boot
