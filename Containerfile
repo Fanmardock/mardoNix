@@ -4,7 +4,7 @@
 
 ARG BASE_IMAGE_TAG="${BASE_IMAGE_TAG:-latest}"
 
-ARG BASE_IMAGE_REPO="quay.io/rakuos/rakuos-base"
+ARG BASE_IMAGE_REPO="quay.io/rakuos/rakuos-base:v3"
 
 
 
