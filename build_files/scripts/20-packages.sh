@@ -6,7 +6,7 @@ set -ouex pipefail
 ## ==========================================
 # Rimozione di tuned-ppd per consentire l'installazione di power-profiles-daemon
 # Rimozione di qt6ct nativo se presente, per evitare conflitti
-rum remove tuned-ppd qt6ct || true
+rum remove -y tuned-ppd qt6ct || true
 
 ## ==========================================
 ## 2. STACK RAKUOS / NIRI / COMPONENTI DI SISTEMA
@@ -76,4 +76,4 @@ echo "options bluetooth disable_ertm=1" > /etc/modprobe.d/bluetooth-xbox.conf
 ## ==========================================
 ## 5. PULIZIA PACCHETTI IN ECESSO (POST-INSTALL)
 ## ==========================================
-rum remove waybar swaylock alacritty cosmic-comp cosmic-initial-setup cosmic-settings || true
+rum remove -y waybar swaylock alacritty cosmic-comp cosmic-initial-setup cosmic-settings || true
