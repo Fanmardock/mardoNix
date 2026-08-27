@@ -2,7 +2,7 @@
 
 # Must NOT have ENV here; ENV is a layer instruction and cannot precede FROM.
 
-ARG BASE_IMAGE_TAG="${BASE_IMAGE_TAG:-v3}"
+ARG BASE_IMAGE_TAG="${BASE_IMAGE_TAG:-latest}"
 
 ARG BASE_IMAGE_REPO="quay.io/rakuos/rakuos-base"
 
