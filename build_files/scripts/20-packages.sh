@@ -51,8 +51,7 @@ rum install -y --allowerasing \
     libvirt virt-manager qemu-kvm flatpak-builder wlr-randr \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
     rakuos-software-gtk \
-    kmod-xpadneo \
-    xpadneo-udev-rules \
+    akmod-xpadneo \
     bluez \
     bluez-tools \
     nautilus \
