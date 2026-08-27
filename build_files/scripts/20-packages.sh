@@ -4,6 +4,8 @@ set -ouex pipefail
 ## ==========================================
 ## 1. RIMOZIONE PREVENTIVA CONFLITTI
 ## ==========================================
+# Rimozione di tuned-ppd per consentire l'installazione di power-profiles-daemon
+# Rimozione di qt6ct nativo se presente, per evitare conflitti
 rum remove tuned-ppd qt6ct || true
 
 ## ==========================================
@@ -50,8 +52,7 @@ rum install -y --allowerasing \
     iotop sysstat lxqt-openssh-askpass lxpolkit parallel \
     rakuos-software-gtk \
     kmod-xpadneo \
-    xpadneo-udev \
-    xone \
+    xpadneo-udev-rules \
     bluez \
     bluez-tools \
     nautilus \
@@ -69,11 +70,11 @@ rum install -y --allowerasing \
 ## ==========================================
 ## 4. FIX CONTROLLER XBOX (BLUETOOTH ERTM)
 ## ==========================================
-# Disabilita ERTM: senza questo, i pad Xbox via Bluetooth continuano a disconnettersi
+# Disabilita ERTM per evitare disconnessioni del pad Xbox via Bluetooth
 mkdir -p /etc/modprobe.d/
 echo "options bluetooth disable_ertm=1" > /etc/modprobe.d/bluetooth-xbox.conf
 
 ## ==========================================
-## 5. PULIZIA PACCHETTI IN ECESSO
+## 5. PULIZIA PACCHETTI IN ECESSO (POST-INSTALL)
 ## ==========================================
 rum remove waybar swaylock alacritty cosmic-comp cosmic-initial-setup cosmic-settings || true
