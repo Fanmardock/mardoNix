@@ -73,6 +73,7 @@ rum install -y --allowerasing \
 mkdir -p /etc/modprobe.d/
 echo "options bluetooth disable_ertm=1" > /etc/modprobe.d/bluetooth-xbox.conf
 
+echo "options usbcore autosuspend=-1" | sudo tee /etc/modprobe.d/disable-autosuspend.conf
 ## ==========================================
 ## 5. PULIZIA PACCHETTI IN ECESSO (POST-INSTALL)
 ## ==========================================
