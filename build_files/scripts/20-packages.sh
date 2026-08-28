@@ -79,6 +79,10 @@ akmods --force --rebuild --kernels "${IMAGE_KERNEL}"
 find "/lib/modules/${IMAGE_KERNEL}" -name 'xpad.ko*' | grep -q . || \
     { echo "ERROR: xpad.ko non trovato sotto /lib/modules/${IMAGE_KERNEL}"; exit 1; }
 
+# Caricamento automatico del modulo all'avvio (systemd-modules-load)
+mkdir -p /etc/modules-load.d/
+echo "xpadneo" > /etc/modules-load.d/xpadneo.conf
+
 ## ==========================================
 ## 4. FIX CONTROLLER XBOX (BLUETOOTH ERTM)
 ## ==========================================
