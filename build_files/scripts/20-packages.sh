@@ -81,7 +81,7 @@ find "/lib/modules/${IMAGE_KERNEL}" -name 'xpad.ko*' | grep -q . || \
 
 # Caricamento automatico del modulo all'avvio (systemd-modules-load)
 mkdir -p /etc/modules-load.d/
-echo "xpadneo" > /etc/modules-load.d/xpadneo.conf
+echo "hid-xpadneo" > /etc/modules-load.d/xpadneo.conf
 
 ## ==========================================
 ## 4. FIX CONTROLLER XBOX (BLUETOOTH ERTM)
