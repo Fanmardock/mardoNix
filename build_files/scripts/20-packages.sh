@@ -6,7 +6,7 @@ set -ouex pipefail
 ## ==========================================
 # Rimozione di tuned-ppd per consentire l'installazione di power-profiles-daemon
 # Rimozione di qt6ct nativo se presente, per evitare conflitti
-rum remove -y tuned-ppd qt6ct || true
+rum remove -y tuned-ppd || true
 
 ## ==========================================
 ## 2. STACK RAKUOS / NIRI / COMPONENTI DI SISTEMA
@@ -67,13 +67,26 @@ rum install -y --allowerasing \
     nautilus-open-any-terminal
 
 ## ==========================================
+## 3b. BUILD XPADNEO AKMOD SUL KERNEL DELL'IMMAGINE
+## ==========================================
+# In container `uname -r` restituisce il kernel dell'HOST (es. runner GitHub),
+# quindi l'akmod finisce in /lib/modules/<ver-host> e al boot non viene mai caricato.
+# Costruiamo esplicitamente contro il kernel spedito dall'immagine, fail-fast se manca.
+IMAGE_KERNEL="$(basename "$(ls -d /lib/modules/*/ | head -n1)")"
+echo "Building xpadneo against image kernel: ${IMAGE_KERNEL}"
+rum install -y "kernel-devel-${IMAGE_KERNEL}" || rum install -y kernel-devel
+akmods --force --rebuild --kernels "${IMAGE_KERNEL}"
+find "/lib/modules/${IMAGE_KERNEL}" -name 'xpad.ko*' | grep -q . || \
+    { echo "ERROR: xpad.ko non trovato sotto /lib/modules/${IMAGE_KERNEL}"; exit 1; }
+
+## ==========================================
 ## 4. FIX CONTROLLER XBOX (BLUETOOTH ERTM)
 ## ==========================================
 # Disabilita ERTM per evitare disconnessioni del pad Xbox via Bluetooth
 mkdir -p /etc/modprobe.d/
 echo "options bluetooth disable_ertm=1" > /etc/modprobe.d/bluetooth-xbox.conf
 
-echo "options usbcore autosuspend=-1" | sudo tee /etc/modprobe.d/disable-autosuspend.conf
+echo "options usbcore autosuspend=-1" | tee /etc/modprobe.d/disable-autosuspend.conf
 ## ==========================================
 ## 5. PULIZIA PACCHETTI IN ECESSO (POST-INSTALL)
 ## ==========================================
