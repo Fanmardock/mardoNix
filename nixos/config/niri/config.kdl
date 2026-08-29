@@ -335,11 +335,6 @@ window-rule {
     match app-id=r#"^org\.wezfurlong\.wezterm$"#
     default-column-width {}
 }
-window-rule {
-    match app-id="rakuos-software"
-    match app-id="rakuos-software-qt"
-    open-maximized true
-}
 // Open the Firefox picture-in-picture player as floating by default.
 window-rule {
     // This app-id regular expression will work for both:

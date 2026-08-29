@@ -8,7 +8,7 @@
 #   30-systemd.sh         → services.greetd + sysusers greeter + tmpfiles dms
 #   40-desktop.sh         → niri config, flatpak provisioning, wireplumber,
 #                           audio unmute, modprobe bluetooth, gsettings override
-#   90-post-build-overlay → NON applicabile (infrastruttura specifica rakuos)
+#   90-post-build-overlay → NON applicabile (infrastruttura specifica del sistema originale)
 #
 # Uso:
 #   In configuration.nix: imports = [ ./modules/mardock.nix ];
