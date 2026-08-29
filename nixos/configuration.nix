@@ -35,10 +35,8 @@
     docker.enable = false;
   };
 
-  # GPU / display
-  services.xserver = {
-    enable = false; # usiamo niri via greetd, non X11
-  };
+  # GPU / display: usiamo niri via greetd, non X11
+  services.xserver.enable = false;
 
   # Sound
   hardware.bluetooth.enable = true;
@@ -55,11 +53,11 @@
   # Console
   console.keyMap = "it";
 
-  # Users (adatta i nomi)
+  # Users (adatta i nomi) — NB: 'code' → 'vscode' in nixpkgs
   users.users.mardock = {
     isNormalUser = true;
     extraGroups = [ "wheel" "video" "render" "audio" "dialout" ];
-    packages = with pkgs; [ kitty mpv nautilus code ];
+    packages = with pkgs; [ kitty mpv nautilus vscode ];
   };
 
   # Power management
@@ -83,6 +81,6 @@
     options = [ "--delete-older-than" "30d" ];
   };
 
-  # State version
+  # State version — NB: NON duplicare in modules/mardock.nix (override)
   system.stateVersion = "24.11";
 }

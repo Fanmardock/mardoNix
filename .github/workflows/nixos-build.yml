@@ -1,0 +1,30 @@
+name: NixOS Build Test
+
+on:
+  push:
+    branches: [ nixos-port ]
+  pull_request:
+    branches: [ nixos-port ]
+
+jobs:
+  build-closure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix (single-user)
+        run: |
+          curl -L https://nixos.org/nix/install | sh
+          source $HOME/.nix-profile/etc/profile.d/nix.sh
+
+      - name: Build full closure (nixpkgs 24.11 stable)
+        run: |
+          source $HOME/.nix-profile/etc/profile.d/nix.sh
+          nix build --impure "nixpkgs#config.system.build.toplevel"
+
+      - name: Validate configuration.nix syntax
+        run: |
+          source $HOME/.nix-profile/etc/profile.d/nix.sh
+          cd nixos
+          nix-instantiate --parse configuration.nix > /dev/null && echo "Syntax OK"
