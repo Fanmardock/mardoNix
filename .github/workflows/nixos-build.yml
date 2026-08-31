@@ -9,6 +9,7 @@ on:
 jobs:
   build-closure:
     runs-on: ubuntu-latest
+    timeout-minutes: 300
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,14 +20,19 @@ jobs:
           mkdir -p $HOME/.config/nix
           echo "experimental-features = nix-command flakes" > $HOME/.config/nix/nix.conf
           source $HOME/.nix-profile/etc/profile.d/nix.sh
-
-      - name: Build full closure (nixpkgs 24.11 stable)
-        run: |
-          source $HOME/.nix-profile/etc/profile.d/nix.sh
-          nix build --impure "nixpkgs#config.system.build.toplevel"
+          nix --version
 
       - name: Validate configuration.nix syntax
         run: |
           source $HOME/.nix-profile/etc/profile.d/nix.sh
-          cd nixos
-          nix-instantiate --parse configuration.nix > /dev/null && echo "Syntax OK"
+          nix-instantiate --parse nixos/configuration.nix > /dev/null && echo "Syntax OK"
+
+      # Pinning esplicito a nixpkgs 24.11 stabile (NixOS/nixpkgs@nixos-24.11),
+      # build della NOSTRA configuration.nix via entry point default.nix,
+      # experimental features passate anche da CLI per non dipendere da nix.conf.
+      - name: Build full closure (nixpkgs 24.11 pinned, our configuration)
+        run: |
+          source $HOME/.nix-profile/etc/profile.d/nix.sh
+          export NIXPKGS_URL="github:NixOS/nixpkgs?rev=nixos-24.11"
+          nix --extra-experimental-features "nix-command flakes" \
+            build --impure -f nixos/default.nix
