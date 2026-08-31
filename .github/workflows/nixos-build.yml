@@ -16,17 +16,17 @@ jobs:
       - name: Install Nix (single-user)
         run: |
           curl -L https://nixos.org/nix/install | sh
+          mkdir -p $HOME/.config/nix
+          echo "experimental-features = nix-command" > $HOME/.config/nix/nix.conf
           source $HOME/.nix-profile/etc/profile.d/nix.sh
 
       - name: Build full closure (nixpkgs 24.11 stable)
         run: |
-          export NIX_CONFIG="experimental-features=nix-command"
           source $HOME/.nix-profile/etc/profile.d/nix.sh
           nix build --impure "nixpkgs#config.system.build.toplevel"
 
       - name: Validate configuration.nix syntax
         run: |
-          export NIX_CONFIG="experimental-features=nix-command"
           source $HOME/.nix-profile/etc/profile.d/nix.sh
           cd nixos
           nix-instantiate --parse configuration.nix > /dev/null && echo "Syntax OK"
