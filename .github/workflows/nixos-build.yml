@@ -9,7 +9,7 @@ on:
 jobs:
   build-closure:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 300
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,15 +27,10 @@ jobs:
           source $HOME/.nix-profile/etc/profile.d/nix.sh
           nix-instantiate --parse nixos/configuration.nix > /dev/null && echo "Syntax OK"
 
-      # Pinning esplicito a nixpkgs 24.11 stabile (NixOS/nixpkgs@nixos-24.11),
-      # build della NOSTRA configuration.nix via entry point default.nix,
-      # experimental features passate anche da CLI per non dipendere da nix.conf.
-      - name: Build full closure (nixpkgs 24.11 pinned, our configuration)
+      # nixpkgs 24.11 è pinnato ermeticamente dentro nixos/default.nix
+      # (fetchTarball): nessun canale/NIX_PATH/NIXPKGS_URL da gestire qui,
+      # e nessun experimental feature richiesto (non è un flake reference).
+      - name: Build full closure (nixpkgs 24.11 pinned, hermetic)
         run: |
           source $HOME/.nix-profile/etc/profile.d/nix.sh
-          export NIXPKGS_URL="github:NixOS/nixpkgs?rev=nixos-24.11"
-          # NB: ogni feature come argomento SEPARATO (una stringa con spazio
-          # verrebbe letta come un solo nome di feature -> errore immediato).
-          nix --extra-experimental-features nix-command \
-              --extra-experimental-features flakes \
-              build --impure -f nixos/default.nix
+          nix build --impure -f nixos/default.nix
