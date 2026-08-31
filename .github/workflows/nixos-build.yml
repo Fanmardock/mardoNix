@@ -17,7 +17,7 @@ jobs:
         run: |
           curl -L https://nixos.org/nix/install | sh
           mkdir -p $HOME/.config/nix
-          echo "experimental-features = nix-command" > $HOME/.config/nix/nix.conf
+          echo "experimental-features = nix-command flakes" > $HOME/.config/nix/nix.conf
           source $HOME/.nix-profile/etc/profile.d/nix.sh
 
       - name: Build full closure (nixpkgs 24.11 stable)
