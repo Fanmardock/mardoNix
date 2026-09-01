@@ -58,14 +58,27 @@ in {
     '';
   };
 
-  boot.sysusers = {
-    extraGroups = [
-      { group = "video";  gid = 44;  }
-      { group = "render"; gid = 989; }
-    ];
-    extraUsers = [
-      { user = "greeter"; home = "/var/empty"; shell = pkgs.utillinux + "/bin/true"; }
-    ];
+  # Le GID esplicite e l'utente greeter, precedentemente dichiarati con la
+  # opzione (inesistente) boot.sysusers, vengono gestiti qui in modo canonico.
+  users.groups = {
+    audio   = { };
+    video   = { gid = 44;  };
+    render  = { gid = 989; };
+    disk    = { };
+    kvm     = { };
+    input   = { };
+    tty     = { };
+    clock   = { };
+    utmp    = { };
+    plugdev = { };
+    lp      = { };
+    bluetooth = { };
+  };
+
+  users.users.greeter = {
+    isSystemUser = true;
+    home = "/var/lib/greeter";
+    shell = pkgs.utillinux + "/bin/true";
   };
 
   system.tmpfiles = [
@@ -137,11 +150,7 @@ in {
     options usbcore autosuspend=-1
   '';
 
-  users.groups = {
-    audio = { }; video = { }; render = { }; disk = { }; kvm = { };
-    input = { }; tty = { }; clock = { }; utmp = { }; plugdev = { };
-    lp = { }; bluetooth = { };
-  };
+
 
   services.libvirtd.enable = true;
   services.pipewire.enable = true;
