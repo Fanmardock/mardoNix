@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 360
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Installa un Nix MODERNO. A differenza di `curl | sh` in una shell
       # usa-e-getta, questa action esporta nix nel PATH per TUTTI i passi
