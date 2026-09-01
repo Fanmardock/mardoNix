@@ -14,20 +14,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Nix (single-user)
-        run: |
-          curl -L https://nixos.org/nix/install | sh
-          mkdir -p $HOME/.config/nix
-          echo "experimental-features = nix-command flakes" > $HOME/.config/nix/nix.conf
-          source $HOME/.nix-profile/etc/profile.d/nix.sh
-          nix --version
+      # Installa un Nix MODERNO. A differenza di `curl | sh` in una shell
+      # usa-e-getta, questa action esporta nix nel PATH per TUTTI i passi
+      # successivi. Prima era questo il punto debole: veniva invocato un nix
+      # vecchio/sbagliato -> "unrecognised flag --print-out-link" e gli errori
+      # di fetchTarball.
+      - name: Install Nix (modern, exported to PATH for all steps)
+        uses: DeterminateSystems/nix-installer-action@v1
+        with:
+          extra_nix_config: "experimental-features = nix-command flakes"
 
-      # Build della NOSTRA configuration.nix contro nixpkgs 24.11 STABILE.
-      # Il pin è ermetico: flake.nix dichiara l'input `nixpkgs` sulla branch
-      # di release nixos-24.11 (non master/unstable) e la locka nel /nix/store.
-      # `.system` == nixosConfigurations.mardock.config.system.build.toplevel,
-      # cioè la toplevel = l'intera closure (tutti i pacchetti compilati).
+      - name: Nix version
+        run: nix --version
+
+      # Check rapido (fail-fast): il flake è valido e la feature 'flakes' è
+      # attiva. Se FALLISCE QUI, il problema è di setup CI, NON della config.
+      - name: Validate flake
+        run: nix flake metadata .
+
+      # Build dell'intera closure NixOS (tutti i pacchetti del sistema).
+      # `.config.system.build.toplevel` è la singola derivation che trascina
+      # con sé ogni pacchetto = "la closure completa". Usa cache.nixos.org
+      # (binari precompilati) per finire in tempo ragionevole.
       - name: Build full closure (nixpkgs 24.11 pinned via flake input)
         run: |
-          source $HOME/.nix-profile/etc/profile.d/nix.sh
-          nix build --print-out-link .#nixosConfigurations.mardock.system
+          set -euo pipefail
+          out=$(nix build --print-out-link .#nixosConfigurations.mardock.config.system.build.toplevel)
+          echo "Toplevel built at: $out"
