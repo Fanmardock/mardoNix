@@ -7,7 +7,7 @@ let
   dmsFlatpakId = "com.danklinux.DMS";
   dmsGreeterWrapper = pkgs.writeShellScriptBin "dms-greeter" ''
     set -e
-    export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    export XDG_RUNTIME_DIR="$${XDG_RUNTIME_DIR:-/run/user/$$(id -u)}"
     if ! flatpak list 2>/dev/null | grep -q "${dmsFlatpakId}"; then
       echo "[mardock] DMS flatpak non trovato, uso niri diretto" >&2
       exec niri
