@@ -9,7 +9,7 @@ on:
 jobs:
   build-closure:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 360
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,15 +22,12 @@ jobs:
           source $HOME/.nix-profile/etc/profile.d/nix.sh
           nix --version
 
-      - name: Validate configuration.nix syntax
+      # Build della NOSTRA configuration.nix contro nixpkgs 24.11 STABILE.
+      # Il pin Ã¨ ermetico: flake.nix dichiara l'input `nixpkgs` sulla branch
+      # di release nixos-24.11 (non master/unstable) e la locka nel /nix/store.
+      # `.system` == nixosConfigurations.mardock.config.system.build.toplevel,
+      # cioÃ¨ la toplevel = l'intera closure (tutti i pacchetti compilati).
+      - name: Build full closure (nixpkgs 24.11 pinned via flake input)
         run: |
           source $HOME/.nix-profile/etc/profile.d/nix.sh
-          nix-instantiate --parse nixos/configuration.nix > /dev/null && echo "Syntax OK"
-
-      # nixpkgs 24.11 è pinnato ermeticamente dentro nixos/default.nix
-      # (fetchTarball): nessun canale/NIX_PATH/NIXPKGS_URL da gestire qui,
-      # e nessun experimental feature richiesto (non è un flake reference).
-      - name: Build full closure (nixpkgs 24.11 pinned, hermetic)
-        run: |
-          source $HOME/.nix-profile/etc/profile.d/nix.sh
-          nix build --impure -f nixos/default.nix
+          nix build --print-out-link .#nixosConfigurations.mardock.system
