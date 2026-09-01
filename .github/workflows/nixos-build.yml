@@ -39,5 +39,8 @@ jobs:
       - name: Build full closure (nixpkgs 24.11 pinned via flake input)
         run: |
           set -euo pipefail
-          out=$(nix build --print-out-link .#nixosConfigurations.mardock.config.system.build.toplevel)
+          # --no-link: no result symlink in CWD; --print-out-paths: prints the
+          # store path(s) of the built output to stdout. (There is NO
+          # --print-out-link flag on `nix build` — that was the CI bug.)
+          out=$(nix build --no-link --print-out-paths .#nixosConfigurations.mardock.config.system.build.toplevel)
           echo "Toplevel built at: $out"
