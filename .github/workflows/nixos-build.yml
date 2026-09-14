@@ -20,7 +20,7 @@ jobs:
       # vecchio/sbagliato -> "unrecognised flag --print-out-link" e gli errori
       # di fetchTarball.
       - name: Install Nix (modern, exported to PATH for all steps)
-        uses: DeterminateSystems/nix-installer-action@v1
+        uses: DeterminateSystems/nix-installer-action@v23
         with:
           extra_nix_config: "experimental-features = nix-command flakes"
 
