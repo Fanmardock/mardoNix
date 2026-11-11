@@ -12,6 +12,6 @@
   });
   perSystem = {inputs', ...}: {
 		# Use the package provided by the input
-    packages.niri = inputs'.niri.packages.default;
+    packages.niri = inputs'.niri.packages.niri-stable;
   };
 }
