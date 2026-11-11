@@ -26,7 +26,7 @@
 
     dank-material-shell = {
       url = "github:duxlabs-dev/dux-shell/stable";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
     niri = {
