@@ -1,4 +1,4 @@
-{moduleWithSystem, ...}: {
+{moduleWithSystem, inputs ,...}: {
 	# moduleWithSystem for Niri
   flake.nixosModules.niri = moduleWithSystem ({self', ...}: {
 		# Native wrapper for niri instead of environment.systemPackages

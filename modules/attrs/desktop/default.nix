@@ -13,7 +13,7 @@
       core
       networking
       hyprland
-      dms
+      dank-material-shell
       niri
     ];
   in {
