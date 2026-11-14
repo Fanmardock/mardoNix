@@ -12,18 +12,6 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     import-tree.url = "github:vic/import-tree";
 
-    # My Nvim config
-    nvim.url = "git+https://git.voidarc.co.uk/voidarc/nvim";
-
-    # Hyprland Configuration
-    hyprland = {
-      url = "git+https://git.voidarc.co.uk/adumh00man/hyprland-dendritic";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        wrappers.follows = "wrappers";
-      };
-    };
-
     dank-material-shell = {
       url = "github:duxlabs-dev/dux-shell/stable";
       inputs.nixpkgs.follows = "nixpkgs-unstable";

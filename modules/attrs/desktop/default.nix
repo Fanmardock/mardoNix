@@ -12,7 +12,6 @@
     modules = with self.nixosModules; [
       core
       networking
-      hyprland
       dank-material-shell
       niri
     ];
