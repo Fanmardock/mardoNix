@@ -1,6 +1,6 @@
 {moduleWithSystem, inputs, ...}: {
 	# moduleWithSystem for Niri
-  flake.nixosModules.niri = moduleWithSystem ({self', ...}: {config, lib, ...}: let
+  flake.nixosModules.niri = moduleWithSystem ({self', ...}: {config, lib, pkgs, ...}: let
     normalUsers = lib.filterAttrs (_: user: user.isNormalUser or false) config.users.users;
   in {
     imports = [
@@ -15,6 +15,7 @@
 
     programs.dms-greeter = {
       enable = true;
+      package = inputs.dank-greeter.packages.${pkgs.system}.dms-greeter;
       compositor.name = "niri";
       configHome = config.users.users.user01.home;
     };
