@@ -29,6 +29,11 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
+    dank-greeter = {
+      url = "github:duxlabs-dev/dux-greeter";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+
     niri = {
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";

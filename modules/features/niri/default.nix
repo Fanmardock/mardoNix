@@ -5,12 +5,20 @@
   in {
     imports = [
       inputs.niri.nixosModules.niri
+      inputs.dank-greeter.nixosModules.default
     ];
 		# Native wrapper for niri instead of environment.systemPackages
     programs.niri = {
       enable = true;
       package = self'.packages.niri;
     };
+
+    programs.dms-greeter = {
+      enable = true;
+      compositor.name = "niri";
+      configHome = config.users.users.user01.home;
+    };
+    systemd.user.services.niri.enableDefaultPath = false;
 
     systemd.tmpfiles.rules = lib.concatLists (lib.mapAttrsToList (name: user: [
       "d ${user.home}/.config/niri 0755 ${name} ${user.group} - -"
