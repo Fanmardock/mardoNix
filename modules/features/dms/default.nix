@@ -7,6 +7,7 @@
 		# Native wrapper for niri instead of environment.systemPackages
     programs.dank-material-shell = {
       enable = true;
+		  systemd.enable = true;
       package = self'.packages.dank-material-shell;
     };
   });
