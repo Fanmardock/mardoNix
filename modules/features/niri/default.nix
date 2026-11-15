@@ -13,6 +13,10 @@
       package = self'.packages.niri;
     };
 
+    environment.systemPackages = [
+      inputs.niri.packages.${pkgs.system}.xwayland-satellite-stable
+    ];
+
     programs.dms-greeter = {
       enable = true;
       package = inputs.dank-greeter.packages.${pkgs.system}.dms-greeter;

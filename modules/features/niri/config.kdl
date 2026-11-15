@@ -285,7 +285,6 @@ layout {
 // spawn-at-startup "waybar"
 
 // Aggiungi queste righe fondamentali:
-spawn-at-startup "lxpolkit"
 spawn-at-startup "blueman-applet"
 spawn-at-startup "amixer" "sset" "Speaker" "unmute"
 spawn-at-startup "musicbg"
