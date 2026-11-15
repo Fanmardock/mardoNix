@@ -41,7 +41,6 @@
       configHome = config.users.users.user01.home;
       logs.save = true;
     };
-    systemd.user.services.niri.enableDefaultPath = false;
 
     systemd.tmpfiles.rules = lib.concatLists (lib.mapAttrsToList (name: user: [
       "d ${user.home}/.config/niri 0755 ${name} ${user.group} - -"
