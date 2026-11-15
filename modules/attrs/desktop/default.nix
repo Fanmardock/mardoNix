@@ -18,6 +18,15 @@
   in {
     imports = modules;
 
+    virtualisation.vmVariant.virtualisation = {
+      graphics = true;
+      qemu.options = [
+        "-vga none"
+        "-device virtio-vga-gl"
+        "-display gtk,gl=on"
+      ];
+    };
+
     # Add lazygit to every desktop
     environment.systemPackages = with pkgs; [
       lazygit
