@@ -675,4 +675,4 @@ binds {
 include "dms/cursor.kdl"
 
 include "dms/outputs.kdl"
-include "dms-theme-sync.kdl"
+include optional=true "dms-theme-sync.kdl"

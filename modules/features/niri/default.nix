@@ -15,6 +15,8 @@
 
     environment.systemPackages = [
       inputs.niri.packages.${pkgs.system}.xwayland-satellite-stable
+      pkgs.wl-clipboard
+      pkgs.cliphist
     ];
 
     programs.dms-greeter = {
@@ -48,7 +50,15 @@
 
     systemd.tmpfiles.rules = lib.concatLists (lib.mapAttrsToList (name: user: [
       "d ${user.home}/.config/niri 0755 ${name} ${user.group} - -"
+      "d ${user.home}/.config/niri/dms 0755 ${name} ${user.group} - -"
       "C+ ${user.home}/.config/niri/config.kdl 0644 root root - ${./config.kdl}"
+      "C+ ${user.home}/.config/niri/global.kdl 0644 root root - ${./global.kdl}"
+      "C+ ${user.home}/.config/niri/dms/colors.kdl 0644 root root - ${./dms/colors.kdl}"
+      "C+ ${user.home}/.config/niri/dms/windowrules.kdl 0644 root root - ${./dms/windowrules.kdl}"
+      "C+ ${user.home}/.config/niri/dms/alttab.kdl 0644 root root - ${./dms/alttab.kdl}"
+      "C+ ${user.home}/.config/niri/dms/wpblur.kdl 0644 root root - ${./dms/wpblur.kdl}"
+      "C+ ${user.home}/.config/niri/dms/cursor.kdl 0644 root root - ${./dms/cursor.kdl}"
+      "C+ ${user.home}/.config/niri/dms/outputs.kdl 0644 root root - ${./dms/outputs.kdl}"
     ]) normalUsers);
   });
   perSystem = {inputs', ...}: {
