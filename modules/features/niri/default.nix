@@ -72,6 +72,6 @@
   });
   perSystem = {inputs', ...}: {
 		# Use the package provided by the input
-    packages.niri = inputs'.niri.packages.niri-stable;
+    packages.niri = inputs'.niri.packages.niri-unstable;
   };
 }
