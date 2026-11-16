@@ -31,6 +31,9 @@
     # Add lazygit to every desktop
     environment.systemPackages = with pkgs; [
       lazygit
+      mpv
+      blueman
+      pipewire
     ];
   });
 }
