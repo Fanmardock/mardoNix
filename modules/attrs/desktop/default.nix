@@ -28,7 +28,7 @@
       ];
     };
 
-    # Add lazygit to every desktop
+    # Add those packages to every desktop
     environment.systemPackages = with pkgs; [
       lazygit
       mpv
