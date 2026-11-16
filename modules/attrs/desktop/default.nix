@@ -14,6 +14,7 @@
       networking
       dank-material-shell
       niri
+      kitty
     ];
   in {
     imports = modules;
