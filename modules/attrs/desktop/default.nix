@@ -34,6 +34,9 @@
       mpv
       blueman
       pipewire
+      google-chrome
+      bluez
+      bluez-tools
     ];
   });
 }
