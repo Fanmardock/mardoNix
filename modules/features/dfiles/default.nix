@@ -1,6 +1,6 @@
 {moduleWithSystem, inputs,...}: {
 	# moduleWithSystem for Niri
-  flake.nixosModules.dfiles = moduleWithSystem ({self', ...}: {
+  flake.nixosModules.dfiles = moduleWithSystem ({self',pkgs, ...}: {
     imports = [
       inputs.dfiles.nixosModules.dux-files
     ];
@@ -13,7 +13,7 @@
           restartIfChanged = true;
         };     
       package = self'.packages.dux-files;
-      quickshell.package = nixospkgs.quickshell;
+      quickshell.package = pkgs.quickshell;
       portal = {
         enable = true;      # register the dfiles backend with xdg-desktop-portal
         preferred = true;   # prefer it for org.freedesktop.impl.portal.FileChooser
