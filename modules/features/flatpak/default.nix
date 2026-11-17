@@ -1,7 +1,7 @@
 {moduleWithSystem, inputs,...}: {
   flake.nixosModules.dfiles = moduleWithSystem ({self',pkgs, ...}: {
     imports = [
-      inputs.nix-flatpak.nixosModules.default
+      inputs.nix-flatpak.nixosModules
     ];
     services.flatpak.enable = true;
     services.flatpak.packages = [
