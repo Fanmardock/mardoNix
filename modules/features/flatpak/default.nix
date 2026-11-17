@@ -1,5 +1,8 @@
 {moduleWithSystem, inputs,...}: {
   flake.nixosModules.dfiles = moduleWithSystem ({self',pkgs, ...}: {
+    imports = [
+      inputs.nix-flatpak.nixosModules.default
+    ];
     services.flatpak.enable = true;
     services.flatpak.packages = [
       "info.febvre.Komikku"
