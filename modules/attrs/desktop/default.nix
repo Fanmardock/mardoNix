@@ -19,6 +19,8 @@
   in {
     imports = modules;
 
+    nixpkgs.config.allowUnfree = true;
+
     virtualisation.vmVariant.virtualisation = {
       graphics = true;
       qemu.options = [
