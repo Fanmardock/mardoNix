@@ -8,7 +8,7 @@
   # Segmenting like this makes it easier to have different types of machines
   # Using the same config, like having a "laptop" attribute if you need different
   # packages there, etc.
-  flake.nixosModules.desktop = moduleWithSystem ({pkgs, ...}: let
+  flake.nixosModules.desktop = moduleWithSystem ({pkgs, unfreePkgs, ...}: let
     modules = with self.nixosModules; [
       core
       networking
@@ -18,8 +18,6 @@
     ];
   in {
     imports = modules;
-
-    nixpkgs.config.allowUnfree = true;
 
     virtualisation.vmVariant.virtualisation = {
       graphics = true;
@@ -31,14 +29,15 @@
     };
 
     # Add those packages to every desktop
-    environment.systemPackages = with pkgs; [
-      lazygit
-      mpv
-      blueman
-      pipewire
-      google-chrome
-      bluez
-      bluez-tools
-    ];
+    environment.systemPackages =
+      (with pkgs; [
+        lazygit
+        mpv
+        blueman
+        pipewire
+        bluez
+        bluez-tools
+      ])
+      ++ [unfreePkgs.google-chrome];
   });
 }
