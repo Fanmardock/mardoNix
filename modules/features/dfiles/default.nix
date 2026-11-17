@@ -13,7 +13,6 @@
           restartIfChanged = true;
         };     
       package = self'.packages.dux-files;
-      quickshell.package = pkgs.quickshell;
       portal = {
         enable = true;      # register the dfiles backend with xdg-desktop-portal
         preferred = true;   # prefer it for org.freedesktop.impl.portal.FileChooser
