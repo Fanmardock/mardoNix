@@ -78,7 +78,6 @@
         # By making an alias reference a package, zsh becomes dependant on that package.
         # This idea allows for fully portable modules with implicit dependancy trees
         some = lib.getExe unstablePkgs.vim;
-        v = lib.getExe inputs'.nvim.packages.default;
         ff = lib.getExe pkgs.fastfetch;
         cat = lib.getExe pkgs.bat;
       };
