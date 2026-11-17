@@ -26,6 +26,12 @@
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    
+    # Dux File manager
+    dfiles = {
+      url = "github:duxlabs-dev/dux-files";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # Nix Wrapper Modules
     wrappers.url = "github:nix-community/nix-wrapper-modules";
