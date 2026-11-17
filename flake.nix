@@ -30,7 +30,7 @@
     # Dux File manager
     dfiles = {
       url = "github:duxlabs-dev/dux-files";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
     # Nix Wrapper Modules
