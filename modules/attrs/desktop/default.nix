@@ -40,7 +40,7 @@
       google-chrome
       bluez
       bluez-tools
-      quickshell
+      nixpkgs.quickshell
     ];
   });
 }
