@@ -16,6 +16,7 @@
       niri
       kitty
       dfiles
+      flatpak
     ];
   in {
     imports = modules;

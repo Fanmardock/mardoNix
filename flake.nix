@@ -11,6 +11,9 @@
     # Flake parts utils
     flake-parts.url = "github:hercules-ci/flake-parts";
     import-tree.url = "github:vic/import-tree";
+    
+    # Flatpak support for nixpkgs
+    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest"; 
 
     dank-material-shell = {
       url = "github:duxlabs-dev/dux-shell/stable";
@@ -26,7 +29,7 @@
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
+
     # Dux File manager
     dfiles = {
       url = "github:duxlabs-dev/dux-files";

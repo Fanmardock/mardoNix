@@ -1,10 +1,8 @@
 {moduleWithSystem, inputs,...}: {
-	# moduleWithSystem for Niri
   flake.nixosModules.dfiles = moduleWithSystem ({self',pkgs, ...}: {
     imports = [
       inputs.dfiles.nixosModules.dux-files
     ];
-		# Native wrapper for niri instead of environment.systemPackages
     programs.dux-files = {
       enable = true;
       systemd = {
