@@ -1,18 +1,15 @@
-{moduleWithSystem, inputs,...}: {
-  flake.nixosModules.dfiles = moduleWithSystem ({self',pkgs, ...}: {
+{inputs, ...}: {
+  flake.nixosModules.flatpak = {
     imports = [
-      inputs.nix-flatpak.nixosModules
-    ];
-    services.flatpak.enable = true;
-    services.flatpak.packages = [
-      "info.febvre.Komikku"
-      "com.bambulab.BambuStudio"
+      inputs.nix-flatpak.nixosModules.nix-flatpak
     ];
 
-  # Optional: Automatically add Flathub or configure updates
-  services.flatpak.remotes = {
-    "flathub" = "https://flathub.org";
+    services.flatpak = {
+      enable = true;
+      packages = [
+        "info.febvre.Komikku"
+        "com.bambulab.BambuStudio"
+      ];
+    };
   };
-  });
-  
 }
