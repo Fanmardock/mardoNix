@@ -12,9 +12,9 @@
   );
   perSystem = {pkgs, ...}: {
     packages.kitty = let
-      fira-mono = pkgs.nerd-fonts.fira-mono;
+      jetbrains-mono = pkgs.nerd-fonts.jetbrains-mono;
       fontsConf = pkgs.makeFontsConf {
-        fontDirectories = [fira-mono];
+        fontDirectories = [jetbrains-mono];
       };
     in
       inputs.wrappers.wrappers.kitty.wrap {
@@ -23,11 +23,11 @@
           "FONTCONFIG_FILE" = "${fontsConf}";
         };
         font = {
-          name = "FiraMono Nerd Font Mono";
-          size = 11;
+          name = "JetBrainsMono Nerd Font";
+          size = 12;
         };
         settings = {
-          font_size = 11;
+          font_size = 12;
           scrollbar = "never";
           pixel_scroll = false;
           window_padding_width = 9;
@@ -43,7 +43,15 @@
         keybindings = {
           "ctrl+backspace" = "send_text all \\x17";
         };
-        themeFile = "Catppuccin-Mocha";
+        extraConfig = ''
+          ${builtins.readFile ./kitty.config}
+          ${builtins.replaceStrings
+            ["include current-theme.conf"]
+            [(builtins.readFile ./current-theme.conf)]
+            (builtins.readFile ./kitty.conf)}
+          ${builtins.readFile ./dank-theme.conf}
+          ${builtins.readFile ./dank-tabs.conf}
+        '';
       };
   };
 }

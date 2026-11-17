@@ -10,6 +10,7 @@
     modules = with self.nixosModules; [
       hostConfiguration
       desktop
+      zsh
     ];
   };
 }
