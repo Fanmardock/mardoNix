@@ -15,7 +15,3 @@ Some commits will require impure evaluation, although I will keep this to a mini
 
 Comments have been placed outside of filming to explain what parts of the code do,
 as this is a mostly "for reference" repo.
-
-This repo also depends on [this hyprland config](https://git.voidarc.co.uk/adumh00man/hyprland-dendritic),
-which is self contained, but contains some more useful wrapper examples.
-
