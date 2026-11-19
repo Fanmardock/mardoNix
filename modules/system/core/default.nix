@@ -23,7 +23,6 @@
     imports = modules;
 
     environment.systemPackages = with pkgs; [
-      vim
       unzip
       p7zip-rar
       usbutils
