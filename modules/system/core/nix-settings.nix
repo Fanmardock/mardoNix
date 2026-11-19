@@ -3,10 +3,6 @@
   perSystem = {system, ...}: {
     # Pre-defined object
     _module.args = {
-      unfreePkgs = import inputs.nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
       # Custom object, creating a new nixpkgs from a different input
       unstablePkgs = import inputs.nixpkgs-unstable {
         inherit system;
@@ -22,6 +18,19 @@
 
       # You can also set universal variables here, if you need to access the same info across files
       someVariable = "import this as you would import pkgs, in a perSystem block";
+    };
+
+    nixpkgs = {
+      config = {
+        allowUnfree = true;
+        packageOverrides = pkgs: {
+          unstable = import inputs.nixpkgs-unstable {
+            config = {
+              allowUnfree = true;
+            };
+          };
+        };
+      };
     };
   };
 }
