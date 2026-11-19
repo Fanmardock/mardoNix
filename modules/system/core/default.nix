@@ -13,7 +13,7 @@
   # those that would make up a basic system, as seen here.
 
   # Define flake part nixosModule "core"
-  flake.nixosModules.core = {pkgs,...}: let
+  flake.nixosModules.core = {pkgs, unfreePkgs,...}: let
     modules = with self.nixosModules; [
       user
       bootloader
@@ -25,7 +25,7 @@
     environment.systemPackages = with pkgs; [
       vim
       unzip
-      p7zip-rar
+      unfreePkgs.p7zip-rar
       usbutils
       lsof
       gvfs
