@@ -12,10 +12,7 @@
     modules = with self.nixosModules; [
       core
       networking
-      dank-material-shell
-      niri
-      kitty
-      dfiles
+      windows-manager
       flatpak
     ];
   in {
@@ -36,7 +33,6 @@
         lazygit
         mpv
         blueman
-        pipewire
         bluez
         bluez-tools
         quickshell
