@@ -20,17 +20,5 @@
       someVariable = "import this as you would import pkgs, in a perSystem block";
     };
 
-    nixpkgs = {
-      config = {
-        allowUnfree = true;
-        packageOverrides = pkgs: {
-          unstable = import inputs.nixpkgs-unstable {
-            config = {
-              allowUnfree = true;
-            };
-          };
-        };
-      };
-    };
   };
 }
