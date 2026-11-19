@@ -1,4 +1,8 @@
-{self, ...}: {
+{
+  moduleWithSystem,
+  self,
+  ...
+}: {
   # This module acts as a collection of other modules, for ease
   # of use. Adding another module to this list will import it
   # for all other modules that import this one.
@@ -13,7 +17,7 @@
   # those that would make up a basic system, as seen here.
 
   # Define flake part nixosModule "core"
-  flake.nixosModules.core = {pkgs, unfreePkgs,...}: let
+  flake.nixosModules.core = moduleWithSystem ({pkgs, unfreePkgs, ...}: let
     modules = with self.nixosModules; [
       user
       bootloader
@@ -34,5 +38,5 @@
       curlWithGnuTls
       wget
     ];
-  };
+  });
 }
