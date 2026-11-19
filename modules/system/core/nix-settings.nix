@@ -23,18 +23,5 @@
       # You can also set universal variables here, if you need to access the same info across files
       someVariable = "import this as you would import pkgs, in a perSystem block";
     };
-
-    nixpkgs = {
-      config = {
-        allowUnfree = true;
-        packageOverrides = pkgs: {
-          unstable = import inputs.nixpkgs-unstable {
-            config = {
-              allowUnfree = true;
-            };
-          };
-        };
-      };
-    };
   };
 }
