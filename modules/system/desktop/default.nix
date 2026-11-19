@@ -36,7 +36,8 @@
         bluez
         bluez-tools
         quickshell
+        unfreePkgs.google-chrome
       ])
-      ++ [unfreePkgs.google-chrome];
+
   });
 }
